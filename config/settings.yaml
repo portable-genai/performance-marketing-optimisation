@@ -1,0 +1,154 @@
+# Performance Marketing and Attribution (D4) — runtime configuration.
+#
+# Switch the entire managed stack to on-prem by setting MKT_PERF_PROFILE=onprem
+# (or profile: onprem below). Nothing in src/performance_marketing/domain changes.
+# MKT_PERF_PROFILE=local runs the whole pipeline offline (deterministic seeded metrics +
+# deterministic engines + deterministic LLM), with NO Google Cloud SDK required.
+#
+# D4 is generic and APAC: the active vertical (banking | online_retail) and market
+# (JP | AU | SG) are settings, and each market's residency region / locales come from the
+# per-market profiles below (config + seed), never a hard-coded branch.
+
+project_id: ${GOOGLE_CLOUD_PROJECT:-your-gcp-project}
+region: asia-southeast1                 # default residency region; per-market overrides apply
+profile: ${MKT_PERF_PROFILE:-}          # local | gcp | platform | onprem. NO fallback on purpose: an unset MKT_PERF_PROFILE is "no choice", which binds the SDK-free adapters but grants none of the local relaxations (no CORS dev origins, no dev-persona identity). Name the profile deliberately: MKT_PERF_PROFILE=local for a dev or demo run, =gcp for a real deployment.
+vertical: ${MKT_VERTICAL:-banking}      # banking | online_retail
+market: ${MKT_MARKET:-SG}               # JP | AU | SG
+
+models:
+  reasoning: gemini-3.5-flash           # GA — report narration (thinking=high)
+  triage: gemini-3.1-flash-lite         # GA — routing / triage / guardrail pre-checks
+  hard_reasoning: gemini-3.1-pro        # Preview — OFF unless use_hard_reasoning=true
+  use_hard_reasoning: false
+
+bigquery:
+  dataset: mkt_performance
+  metrics_table: channel_metrics
+  journeys_table: conversion_journeys
+  series_table: metric_series
+  location: asia-southeast1
+
+forecast:
+  model: timesfm                        # Vertex AI forecasting model
+  horizon_days: 14
+  enabled: false                        # OFF by default; opt in per deployment
+
+model_armor:
+  template_id: mkt-perf-guardrail
+  host: modelarmor.asia-southeast1.rep.googleapis.com
+
+logging:
+  log_name: performance-marketing-optimisation-audit
+  bucket: performance-marketing-optimisation-worm
+  retention_days: 2557                  # ~7 years; bucket is locked (irreversible) in prod
+
+agent_engine:
+  resource_name: ${MKT_AGENT_ENGINE:-}
+  display_name: performance-marketing-optimisation
+
+# Local profile stores (SDK-free). Empty paths default under ~/.performance_marketing/;
+# tests use ":memory:" for ephemeral, deterministic SQLite. No Google Cloud here.
+local:
+  audit_path: ${MKT_LOCAL_AUDIT:-}      # append-only local audit (WORM stand-in)
+  seed_path: ${MKT_LOCAL_SEED:-}        # metrics seed JSON ("" => bundled fictional seed)
+
+# Adopter-owned statistical decision policy. These are reference defaults.
+policy:
+  attribution_first_weight: 0.4
+  attribution_last_weight: 0.4
+  significance_alpha: 0.05
+  significance_min_sample_per_arm: 100
+  optimisation_max_step_fraction: 0.25
+  optimisation_min_shift: 1.0
+  anomaly_z_threshold: 3.0
+  anomaly_high_threshold: 4.0
+  anomaly_critical_threshold: 6.0
+  anomaly_min_window: 4
+
+# Per-market residency regions and locales (config + seed, NEVER hard-coded in a branch).
+# JP -> Tokyo, AU -> Sydney, SG -> Singapore; the region is selectable at deploy and
+# validated by config.market_profile().
+markets:
+  JP:
+    region: asia-northeast1
+    locales: [ja, en]
+    currency: JPY
+  AU:
+    region: australia-southeast1
+    locales: [en]
+    currency: AUD
+  SG:
+    region: asia-southeast1
+    locales: [en]
+    currency: SGD
+
+# ----------------------------------------------------------------------------- #
+# Port -> adapter bindings. The container picks the entry for the active profile,
+# falling back to the 'gcp' entry. These dotted paths are the build contract:
+# each adapter class takes a single Settings argument.
+# ----------------------------------------------------------------------------- #
+adapters:
+  # End-user identity (authentication). local = seeded dev personas, NO IdP/AD/LDAP, so
+  # demos and tests run offline; gcp/platform = verify the IAP-injected signed assertion
+  # (auth configured ON the GCP service); onprem = client IdP placeholder. The resolved
+  # Principal supplies the audit actor + entitlement principals, replacing any client-
+  # asserted actor/ACL.
+  identity:
+    gcp: performance_marketing.adapters.gcp.iap_identity:IapIdentityAdapter
+    platform: performance_marketing.adapters.gcp.iap_identity:IapIdentityAdapter
+    local: performance_marketing.adapters.local.identity:LocalPersonaIdentityAdapter
+    onprem: performance_marketing.adapters.onprem.identity:OnPremIdentityAdapter
+  metrics:
+    gcp: performance_marketing.adapters.gcp.bigquery_metrics:BigQueryMetricsAdapter
+    platform: performance_marketing.adapters.gcp.bigquery_metrics:BigQueryMetricsAdapter
+    local: performance_marketing.adapters.local.metrics:LocalMetricsAdapter
+    onprem: performance_marketing.adapters.onprem.metrics:OnPremMetricsAdapter
+  ad_platform:
+    gcp: performance_marketing.adapters.gcp.ad_platform:VertexAdPlatformAdapter
+    platform: performance_marketing.adapters.gcp.ad_platform:VertexAdPlatformAdapter
+    local: performance_marketing.adapters.local.ad_platform:LocalAdPlatformAdapter
+    onprem: performance_marketing.adapters.onprem.ad_platform:OnPremAdPlatformAdapter
+  llm:
+    gcp: performance_marketing.adapters.gcp.gemini_llm:GeminiLLMAdapter
+    platform: performance_marketing.adapters.gcp.gemini_llm:GeminiLLMAdapter
+    local: performance_marketing.adapters.local.llm:LocalDeterministicLLMAdapter
+    onprem: performance_marketing.adapters.onprem.llm:OnPremLLMAdapter
+  guardrail:
+    gcp: performance_marketing.adapters.gcp.model_armor_guardrail:ModelArmorGuardrailAdapter
+    platform: performance_marketing.adapters.platform.remote_guardrail:RemoteGuardrailAdapter
+    local: performance_marketing.adapters.local.guardrail:LocalHeuristicGuardrailAdapter
+    onprem: performance_marketing.adapters.onprem.guardrail:OnPremGuardrailAdapter
+  audit:
+    gcp: performance_marketing.adapters.gcp.cloud_logging_audit:CloudLoggingAuditAdapter
+    platform: performance_marketing.adapters.platform.remote_audit:RemoteAuditAdapter
+    local: performance_marketing.adapters.local.audit:LocalAppendOnlyAuditAdapter
+    onprem: performance_marketing.adapters.onprem.audit:OnPremAuditAdapter
+  tracer:
+    gcp: performance_marketing.adapters.gcp.cloud_trace_tracer:CloudTraceTracerAdapter
+    platform: performance_marketing.adapters.gcp.cloud_trace_tracer:CloudTraceTracerAdapter
+    local: performance_marketing.adapters.local.tracer:LocalNoopTracerAdapter
+    onprem: performance_marketing.adapters.onprem.tracer:OnPremTracerAdapter
+  evaluation:
+    gcp: performance_marketing.adapters.gcp.genai_eval:GenAiEvalAdapter
+    platform: performance_marketing.adapters.platform.remote_evaluation:RemoteEvaluationAdapter
+    local: performance_marketing.adapters.local.evaluation:LocalOfflineEvalAdapter
+    onprem: performance_marketing.adapters.onprem.evaluation:OnPremEvalAdapter
+  agent_registry:
+    gcp: performance_marketing.adapters.gcp.a2a_registry:A2ARegistryAdapter
+    platform: performance_marketing.adapters.platform.remote_registry:RemoteRegistryAdapter
+    local: performance_marketing.adapters.local.registry_agent:LocalAgentRegistryAdapter
+    onprem: performance_marketing.adapters.onprem.registry_agent:OnPremAgentRegistryAdapter
+  tool_catalog:
+    gcp: performance_marketing.adapters.gcp.mcp_tool_catalog:McpToolCatalogAdapter
+    platform: performance_marketing.adapters.gcp.mcp_tool_catalog:McpToolCatalogAdapter
+    local: performance_marketing.adapters.local.tool_catalog:LocalToolCatalogAdapter
+    onprem: performance_marketing.adapters.onprem.tool_catalog:OnPremToolCatalogAdapter
+  # Review routing (rule R8): a performance report always requires_human_review, so it is routed
+  # to the Hrz7 maker-checker console rather than terminating in a boolean. gcp/platform submit
+  # over S2S via review-kit; local enqueues to an in-memory outbox (offline demo/tests);
+  # onprem is the sovereign migration placeholder that must be implemented before porting.
+  review_router:
+    gcp: performance_marketing.adapters.platform.review_router:PlatformReviewRouter
+    platform: performance_marketing.adapters.platform.review_router:PlatformReviewRouter
+    local: performance_marketing.adapters.local.review_router:LocalReviewRouter
+    onprem: performance_marketing.adapters.onprem.review_router:OnPremReviewRouter

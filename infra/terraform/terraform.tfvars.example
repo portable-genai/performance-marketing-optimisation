@@ -1,0 +1,27 @@
+# terraform.tfvars.example - copy to terraform.tfvars and fill in for your project.
+# All values here are FICTIONAL placeholders.
+
+# Required: the single-tenant, single-market project hosting Mkt4.
+project_id = "mkt-perf-sg-fictional-0001"
+
+# Residency region. SG market default; JP -> asia-northeast1, AU -> australia-southeast1.
+region = "asia-southeast1"
+
+# WORM audit retention (~7 years). The bucket lock is irreversible; keep >= 2557.
+retention_days = 2557
+
+# Org-level inputs (needed for org-wide policy / VPC-SC). Leave blank for project-scoped use.
+org_id           = "000000000000"
+access_policy_id = ""
+
+# VPC Service Controls. Stand the perimeter up in dry-run first, watch the audit logs,
+# then set vpc_sc_dry_run = false to enforce.
+enable_vpc_sc  = false
+vpc_sc_dry_run = true
+
+# Cloud Run image (Artifact Registry, asia-southeast1).
+container_image = "asia-southeast1-docker.pkg.dev/mkt-perf-sg-fictional-0001/mkt/performance-marketing-optimisation:0.1.0"
+
+# Monitoring notification channels (create separately; ids look like below).
+alert_notification_channels = []
+# alert_notification_channels = ["projects/mkt-perf-sg-fictional-0001/notificationChannels/0000000000000000000"]

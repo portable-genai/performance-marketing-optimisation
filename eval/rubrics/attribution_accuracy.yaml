@@ -1,0 +1,16 @@
+# Attribution-accuracy rubric for D4.
+#
+# The deterministic multi-touch attribution engine must conserve credit: the per-channel
+# credit shares must sum to ~1.0 (no leaked or duplicated conversion credit), and every
+# consequential report must carry the human-review flag (nothing auto-executes).
+metric: attribution_accuracy
+threshold: 0.80
+description: >-
+  Fraction of golden accounts where the deterministic attribution credit shares sum to 1.0
+  within tolerance (credit is conserved across channels).
+companion_metrics:
+  review_safety:
+    threshold: 0.99
+    description: >-
+      Fraction of reports that correctly set requires_human_review=True (maker-checker)
+      before any budget shift is executed.

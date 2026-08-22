@@ -1,0 +1,17 @@
+# Groundedness rubric for the D4 performance report.
+#
+# Every computed figure in the report (per-channel ROAS / CAC, attribution credit, budget
+# shift) must be backed by at least one Citation. The offline gate (eval/run_eval.py)
+# enforces the threshold below; the production Gen AI evaluation service uses the same metric
+# name pre-promotion.
+metric: report_groundedness
+threshold: 0.80
+description: >-
+  Fraction of reports whose computed figures all carry at least one citation. A report built
+  on uncited figures fails.
+companion_metrics:
+  citation_accuracy:
+    threshold: 0.90
+    description: >-
+      Fraction of cited source ids that appear in the computed / derived evidence set (no
+      fabricated citations).

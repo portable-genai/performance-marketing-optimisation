@@ -1,0 +1,10 @@
+# Golden account set for the D4 offline eval gate. OBVIOUSLY-FICTIONAL synthetic cases.
+# Each line: an (account_id, market, vertical) request whose figures come from the seeded
+# warehouse in adapters/local/_seed.py. Covers BOTH verticals (banking AND online retail)
+# across ALL THREE markets (JP, AU, SG).
+{"id": "sg-banking", "account_id": "acct-sg-banking", "market": "SG", "vertical": "banking", "expected_requires_human_review": true}
+{"id": "jp-banking", "account_id": "acct-jp-banking", "market": "JP", "vertical": "banking", "expected_requires_human_review": true}
+{"id": "au-banking", "account_id": "acct-au-banking", "market": "AU", "vertical": "banking", "expected_requires_human_review": true}
+{"id": "sg-retail", "account_id": "acct-sg-online_retail", "market": "SG", "vertical": "online_retail", "expected_requires_human_review": true}
+{"id": "jp-retail", "account_id": "acct-jp-online_retail", "market": "JP", "vertical": "online_retail", "expected_requires_human_review": true}
+{"id": "au-retail", "account_id": "acct-au-online_retail", "market": "AU", "vertical": "online_retail", "expected_requires_human_review": true}
