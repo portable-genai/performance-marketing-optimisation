@@ -21,7 +21,7 @@ import type {
   PerformanceReport,
   Vertical,
 } from "./types";
-import { ConfiguredEmptyError, readEnvSetting } from "./env-setting.mjs";
+import { ConfiguredEmptyError, readEnvValue } from "./env-setting.mjs";
 
 // The API base is resolved in THREE states, not two.
 //
@@ -31,7 +31,13 @@ import { ConfiguredEmptyError, readEnvSetting } from "./env-setting.mjs";
 // `connect-src` is built from the same value, so the emptied deployment is byte-identical to one
 // that never configured the variable. Next inlines NEXT_PUBLIC_* AT BUILD TIME, so the wrong
 // value is frozen into the bundle and cannot be corrected at start-up.
-const API_BASE_SETTING = readEnvSetting(process.env, "NEXT_PUBLIC_API_BASE");
+// The literal member expression is required: a bundler substitutes the public value
+// only where it sees exactly this, and handing it `process.env` leaves the browser
+// reading {} and silently taking the hard-coded loopback default.
+const API_BASE_SETTING = readEnvValue(
+  "NEXT_PUBLIC_API_BASE",
+  process.env.NEXT_PUBLIC_API_BASE,
+);
 if (API_BASE_SETTING.isConfiguredEmpty) {
   throw new ConfiguredEmptyError(
     "NEXT_PUBLIC_API_BASE is set to an empty value. An emptied variable names nothing, " +
