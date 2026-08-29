@@ -22,6 +22,12 @@ import {
   generateNonce,
 } from "../lib/csp.mjs";
 
+// Every assertion below is about the policy a DEPLOYMENT serves, so every one of them names the
+// environment it is asserting. `contentSecurityPolicy` widens `script-src` and `connect-src` on a
+// development server and only there, and a test that left NODE_ENV unset would silently be
+// checking the dev policy while claiming to pin the shipped one.
+const PROD = { NODE_ENV: "production" };
+
 /** Split a policy string into a directive map, the way a browser parses it. */
 function directives(csp) {
   return new Map(
@@ -37,7 +43,7 @@ function directives(csp) {
 }
 
 test("the policy carries every directive a default-deny posture needs", () => {
-  const parsed = directives(contentSecurityPolicy({}, "n0nce"));
+  const parsed = directives(contentSecurityPolicy(PROD, "n0nce"));
   for (const name of [
     "default-src",
     "base-uri",
@@ -60,18 +66,18 @@ test("no directive is ever empty, in any state of the framing variable", () => {
   // An empty directive is a CSP parse error. Browsers discard the directive rather than the
   // policy, so `frame-ancestors` with no value removes the clickjacking restriction silently.
   for (const env of [{}, { NEXT_PUBLIC_FRAME_ANCESTORS: "" }, { NEXT_PUBLIC_FRAME_ANCESTORS: "  " }]) {
-    for (const [name, value] of directives(contentSecurityPolicy(env, "n0nce"))) {
+    for (const [name, value] of directives(contentSecurityPolicy({ ...PROD, ...env }, "n0nce"))) {
       assert.notEqual(value, "", `directive ${name} is empty for env ${JSON.stringify(env)}`);
     }
   }
 });
 
 test("script-src takes the nonce and strict-dynamic only when a nonce is passed", () => {
-  const withNonce = directives(contentSecurityPolicy({}, "abc123")).get("script-src");
+  const withNonce = directives(contentSecurityPolicy(PROD, "abc123")).get("script-src");
   assert.equal(withNonce, "'self' 'nonce-abc123' 'strict-dynamic'");
 
   // No nonce means the response is not a Next-rendered document, so no inline allowance at all.
-  const without = directives(contentSecurityPolicy({})).get("script-src");
+  const without = directives(contentSecurityPolicy(PROD)).get("script-src");
   assert.equal(without, "'self'");
   assert.ok(!without.includes("unsafe-inline"));
 });
@@ -98,7 +104,7 @@ test("X-Frame-Options is emitted only for the two policies it can express", () =
 
 test("connect-src widens to the API ORIGIN, not the full configured URL", () => {
   const parsed = directives(
-    contentSecurityPolicy({ NEXT_PUBLIC_API_BASE: "https://api.example/v1/report?x=1" }, "n"),
+    contentSecurityPolicy({ ...PROD, NEXT_PUBLIC_API_BASE: "https://api.example/v1/report?x=1" }, "n"),
   );
   assert.equal(parsed.get("connect-src"), "'self' https://api.example");
 });
@@ -106,7 +112,7 @@ test("connect-src widens to the API ORIGIN, not the full configured URL", () => 
 test("connect-src permits the same default the fetch client falls back to", () => {
   // The two must not be separate literals. When they disagree the console fetches an origin its
   // own policy forbids, and the only symptom is a blocked request in the browser console.
-  const parsed = directives(contentSecurityPolicy({}, "n"));
+  const parsed = directives(contentSecurityPolicy(PROD, "n"));
   assert.equal(parsed.get("connect-src"), `'self' ${new URL(DEFAULT_API_BASE).origin}`);
 });
 
@@ -115,19 +121,19 @@ test("a rooted API base stays same-origin rather than being refused", () => {
   // already covered by 'self', so it widens nothing, and refusing it answered 500 on a working
   // deployment. What must never happen is the value being dropped while it names a real origin,
   // which is the case below.
-  assert.doesNotThrow(() => contentSecurityPolicy({ NEXT_PUBLIC_API_BASE: "/apps/x/api" }, "n"));
+  assert.doesNotThrow(() => contentSecurityPolicy({ ...PROD, NEXT_PUBLIC_API_BASE: "/apps/x/api" }, "n"));
 });
 
 test("a protocol-relative API base is refused rather than read as same-origin", () => {
   assert.throws(
-    () => contentSecurityPolicy({ NEXT_PUBLIC_API_BASE: "//api.example/v1" }, "n"),
+    () => contentSecurityPolicy({ ...PROD, NEXT_PUBLIC_API_BASE: "//api.example/v1" }, "n"),
     /must name its scheme/,
   );
 });
 
 test("an API base that is neither absolute nor rooted is refused", () => {
   assert.throws(
-    () => contentSecurityPolicy({ NEXT_PUBLIC_API_BASE: "api.example/v1" }, "n"),
+    () => contentSecurityPolicy({ ...PROD, NEXT_PUBLIC_API_BASE: "api.example/v1" }, "n"),
     /NEXT_PUBLIC_API_BASE/,
   );
 });
@@ -194,7 +200,7 @@ test("the policy the proxy actually serves refuses a wildcard too", () => {
   // the resolver alone would be theatre if this path could still build a policy around it.
   for (const wildcard of ["*", "'*'", "null", "*.*", "https://*.client.example"]) {
     assert.throws(
-      () => contentSecurityPolicy({ NEXT_PUBLIC_FRAME_ANCESTORS: wildcard }, "n0nce"),
+      () => contentSecurityPolicy({ ...PROD, NEXT_PUBLIC_FRAME_ANCESTORS: wildcard }, "n0nce"),
       WildcardOriginError,
       `the served document policy must not carry frame-ancestors ${wildcard}`,
     );
@@ -216,7 +222,7 @@ test("a legitimate named allowlist is unaffected by the wildcard refusal", () =>
   assert.equal(frameAncestors({ NEXT_PUBLIC_FRAME_ANCESTORS: "'self'" }), "'self'");
   assert.equal(frameAncestors({ NEXT_PUBLIC_FRAME_ANCESTORS: "'none'" }), "'none'");
   assert.match(
-    contentSecurityPolicy({ NEXT_PUBLIC_FRAME_ANCESTORS: "https://portal.client.example" }, "n"),
+    contentSecurityPolicy({ ...PROD, NEXT_PUBLIC_FRAME_ANCESTORS: "https://portal.client.example" }, "n"),
     /frame-ancestors https:\/\/portal\.client\.example/,
   );
 });
@@ -234,4 +240,27 @@ test("the unset and emptied states are exactly what they were before wildcards w
     );
   }
   assert.equal(frameOptions("'none'"), "DENY");
+});
+
+test("'unsafe-eval' and the HMR websocket exist on the dev server and NOWHERE else", () => {
+  // RED before the dev branch existed: `next dev` was served the production policy, so React
+  // reported that eval is unavailable, `__next_f` never filled, and the console rendered its
+  // controls as dead markup while the header, the type-check, the build and every other test
+  // stayed green. Both relaxations are keyed off NODE_ENV alone, so `next build` and `next start`
+  // cannot emit either one, and `scripts/assert-hydratable.mjs` re-proves that on the artefact.
+  const dev = directives(contentSecurityPolicy({ NODE_ENV: "development" }, "n0nce"));
+  assert.match(dev.get("script-src"), /'unsafe-eval'/);
+  assert.match(dev.get("connect-src"), /ws: wss:/);
+
+  for (const nonce of [undefined, "n0nce"]) {
+    const policy = contentSecurityPolicy(PROD, nonce);
+    assert.doesNotMatch(policy, /unsafe-eval/, `unsafe-eval reached production (nonce: ${nonce})`);
+    assert.doesNotMatch(policy, /ws:/, `a websocket source reached production (nonce: ${nonce})`);
+  }
+
+  // The relaxation widens the two directives it names and nothing else: `'unsafe-inline'` is the
+  // token an XSS actually needs in `script-src`, and it is absent in both modes.
+  assert.equal(dev.get("default-src"), "'self'");
+  assert.equal(dev.get("object-src"), "'none'");
+  assert.doesNotMatch(dev.get("script-src"), /unsafe-inline/);
 });

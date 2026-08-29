@@ -11,8 +11,9 @@ npm run build           # must compile (tsconfig has baseUrl "." for the @/* ali
 NEXT_PUBLIC_API_BASE=http://localhost:8103 npm run dev
 ```
 
-The API base defaults to `http://localhost:8103` (the Mkt4 API port). See
-`.env.local.example`.
+The API base defaults to `http://localhost:8103` (the Mkt4 API port), so nothing needs
+configuring to run against `make run-api`. Override it by setting `NEXT_PUBLIC_API_BASE`
+before `npm run build`: Next inlines every `NEXT_PUBLIC_*` value at build time.
 
 ## Source map
 

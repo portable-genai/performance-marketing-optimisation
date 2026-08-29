@@ -42,10 +42,15 @@ make demo-server                   # http://localhost:8113
 #    terminal 2: .venv/bin/python scripts/demo_playwright.py
 #    unattended: HEADLESS=1 DEMO_AUTO=1 .venv/bin/python scripts/demo_playwright.py
 
-# e) the API + the thin console
+# e) the API + the thin console, on a PRODUCTION build
 make run-api                       # FastAPI on :8103 (local profile)
-cd ui && NEXT_PUBLIC_API_BASE=http://localhost:8103 npm install && npm run dev
+cd ui && npm install && NEXT_PUBLIC_API_BASE=http://localhost:8103 npm run build && npm run start
 ```
+
+`NEXT_PUBLIC_*` is inlined by the BUILD, which is why it is set on `npm run build` and not on
+`npm run start`. Demo the built console, never `make run-ui`: that target is the developer
+loop and serves `next dev`, and the standing rule for every demo in the fleet is
+`org-metadata/docs/demos/demo-inventory.md`: production builds only.
 
 In the console, pick a market (JP / AU / SG), a vertical (banking / online retail) and an
 attribution model, then **Build cited report**. The report shows per-channel ROAS / CAC vs
