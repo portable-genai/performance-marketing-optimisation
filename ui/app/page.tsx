@@ -91,7 +91,7 @@ export default function Page() {
   return (
     <main className="mx-auto flex max-w-6xl gap-6 p-6">
       <aside className="w-80 shrink-0">
-        <h1 className="text-base font-semibold">D4 Performance Marketing</h1>
+        <h1 className="text-base font-semibold">Performance Marketing</h1>
         <p className="mb-4 text-xs text-ink-500">
           Cited performance reports (attribution, ROAS / CAC, budget plan, A/B significance,
           anomalies), generic across banking and online retail and the JP/AU/SG markets.
