@@ -102,7 +102,7 @@ def settings() -> Settings:
 
 @pytest.fixture
 def adapter(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> RemoteEvaluationAdapter:
-    monkeypatch.setenv("HRZ_QUALITY_URL", _BASE)
+    monkeypatch.setenv("QUALITY_GATE_URL", _BASE)
     return RemoteEvaluationAdapter(settings)
 
 
