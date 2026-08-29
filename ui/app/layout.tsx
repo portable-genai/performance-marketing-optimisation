@@ -10,7 +10,7 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "D4 Performance Marketing",
+  title: "Performance Marketing",
   description:
     "Cited performance reports (multi-touch attribution, ROAS / CAC, budget plan, A/B significance, anomalies), generic across banking and online retail and the JP/AU/SG markets.",
 };
@@ -34,7 +34,7 @@ export default function RootLayout({
             <header className="border-b border-ink-200 bg-white">
               <div className="mx-auto max-w-6xl px-6 py-3">
                 <span className="text-sm font-semibold text-ink-800">
-                  D4 · Performance Marketing and Attribution
+                  Performance Marketing and Attribution
                 </span>
                 <span className="ml-2 text-xs text-ink-400">
                   synthetic data is fictional · JP / AU / SG
