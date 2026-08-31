@@ -37,6 +37,36 @@ _SCOPE_SCHEMA: dict[str, Any] = {
 }
 
 
+# The FULL input every tool here consumes, declared once because every tool consumes all of it.
+#
+# All three handlers call `_report(arguments)`, which builds ONE report from `_request` and then
+# returns a slice: the whole report, `.budget_plan`, or `.ab_results`. The projection is the only
+# difference, so the attribution model and the lookback window shape a budget plan and an A/B
+# verdict exactly as much as they shape the full report.
+#
+# Until 2026-08-31 the two narrow tools declared only their headline field plus the scope, with
+# `additionalProperties: False`. That is a REFUSAL rather than a silent default: a caller could
+# not send `lookback_days` even knowing it moved the answer, and `_request` then read the
+# 30-day default. `ab_significance` was the sharp case -- it never declared `account_id` at all,
+# so every A/B verdict it served was computed for the empty account. Found mechanically by
+# tests/unit/test_mcp_schema_matches_its_handler.py.
+_REPORT_INPUT_SCHEMA: dict[str, Any] = {
+    "account_id": {"type": "string", "description": "Account id."},
+    "attribution_model": {
+        "type": "string",
+        "enum": ["last_touch", "first_touch", "linear", "position_based"],
+        "default": "position_based",
+    },
+    "lookback_days": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 365,
+        "default": 30,
+    },
+    **_SCOPE_SCHEMA,
+}
+
+
 def _build_catalog() -> dict[str, ToolSpec]:
     """Declare the governed tools with explicit, least-privilege input schemas."""
     return {
@@ -48,21 +78,7 @@ def _build_catalog() -> dict[str, ToolSpec]:
             ),
             input_schema={
                 "type": "object",
-                "properties": {
-                    "account_id": {"type": "string", "description": "Account id."},
-                    "attribution_model": {
-                        "type": "string",
-                        "enum": ["last_touch", "first_touch", "linear", "position_based"],
-                        "default": "position_based",
-                    },
-                    "lookback_days": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 365,
-                        "default": 30,
-                    },
-                    **_SCOPE_SCHEMA,
-                },
+                "properties": dict(_REPORT_INPUT_SCHEMA),
                 "required": ["account_id"],
                 "additionalProperties": False,
             },
@@ -75,10 +91,7 @@ def _build_catalog() -> dict[str, ToolSpec]:
             ),
             input_schema={
                 "type": "object",
-                "properties": {
-                    "account_id": {"type": "string", "description": "Account id."},
-                    **_SCOPE_SCHEMA,
-                },
+                "properties": dict(_REPORT_INPUT_SCHEMA),
                 "required": ["account_id"],
                 "additionalProperties": False,
             },
@@ -93,9 +106,12 @@ def _build_catalog() -> dict[str, ToolSpec]:
                 "type": "object",
                 "properties": {
                     "test_id": {"type": "string", "description": "Experiment id."},
-                    **_SCOPE_SCHEMA,
+                    **_REPORT_INPUT_SCHEMA,
                 },
-                "required": ["test_id"],
+                # `test_id` stays optional: the handler deliberately returns every result when
+                # it is absent. `account_id` is required because the report cannot be built
+                # without one, which is exactly what this tool was doing before.
+                "required": ["account_id"],
                 "additionalProperties": False,
             },
         ),
