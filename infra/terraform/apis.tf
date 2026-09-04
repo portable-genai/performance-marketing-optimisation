@@ -1,4 +1,4 @@
-# apis.tf - Enable exactly the managed services Mkt4 depends on.
+# apis.tf - Enable exactly the managed services performance-marketing-optimisation depends on.
 #
 # Guarantee map:
 #   Managed-first / minimal surface: only the services the pinned gcp profile actually

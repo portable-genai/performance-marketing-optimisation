@@ -162,7 +162,7 @@ adapters:
     local: performance_marketing.adapters.local.tool_catalog:LocalToolCatalogAdapter
     onprem: performance_marketing.adapters.onprem.tool_catalog:OnPremToolCatalogAdapter
   # Review routing (rule R8): a performance report always requires_human_review, so it is routed
-  # to the Hrz7 maker-checker console rather than terminating in a boolean. gcp/platform submit
+  # to the human-review-console maker-checker console rather than terminating in a boolean. gcp/platform submit
   # over S2S via review-kit; local enqueues to an in-memory outbox (offline demo/tests);
   # onprem is the sovereign migration placeholder that must be implemented before porting.
   review_router:

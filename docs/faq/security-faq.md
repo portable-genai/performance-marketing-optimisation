@@ -32,7 +32,7 @@ records), but the isolation contract is now enforced rather than assumed.
 
 ### Is there customer PII to protect in this repo?
 
-No, by design. Mkt4 measures over **aggregate** channel and campaign metrics (spend,
+No, by design. `performance-marketing-optimisation` measures over **aggregate** channel and campaign metrics (spend,
 impressions, clicks, conversion counts, revenue, ROAS / CAC, budgets, A/B arm totals). There
 is no customer-level record in the request or the warehouse, so there is nothing to redact
 and no national-identifier pattern to select by jurisdiction. The practices audit records
@@ -42,7 +42,7 @@ the pipeline has, and needs, no redaction step. See
 
 ### What about the service-to-service calls in the `platform` profile?
 
-The one real outbound call today is the Hrz4 eval client, re-based on the shared
+The one real outbound call today is the `model-quality-gate` eval client, re-based on the shared
 `PromotionGateClient` from `hex-service-kit`: it requires an `https://` base URL outside
 loopback (rejected at construction by the fail-closed base-URL guard) and attaches an S2S
 bearer credential. The remaining platform delegates (guardrail, audit, registry) are phase
@@ -76,7 +76,7 @@ over canonical JSON, SQLite `UPDATE` / `DELETE` triggers enforcing append-only, 
 `tests/unit/test_audit_chain.py`. The module states its honest limits: a bare chain carries
 no secret, so it cannot by itself detect a full rewrite or tail truncation; in production the
 `gcp` profile writes to a locked WORM bucket, which provides non-rewritability. This repo
-does **not** replace the platform audit system (**Hrz5**); see
+does **not** replace the platform audit system (`agent-observability`); see
 [features-faq.md](features-faq.md) for the boundary.
 
 ### Supply chain: are dependencies pinned and scanned?
@@ -99,7 +99,7 @@ account is obviously-fictional (suffixed FICTIONAL, URLs point at `example.test`
 
 - The security-header baseline is partial (nosniff, Referrer-Policy, HSTS, full UI CSP still
   to add).
-- The `platform` delegates other than the Hrz4 eval client are phase stubs.
+- The `platform` delegates other than the `model-quality-gate` eval client are phase stubs.
 - The hash chain needs the WORM bucket (or an external anchor) to resist truncation.
 - The `onprem` adapters are fail-fast placeholders, not a built sovereign stack.
 - This is a reference build: run your own pen-test, threat model, and model-risk review

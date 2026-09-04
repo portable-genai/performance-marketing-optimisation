@@ -101,7 +101,7 @@ to sweep Markdown prose too. The script deliberately does NOT touch the human de
    bundle: a fork inherits a green gate that measures the WRONG thing until you do. The gate
    structure is generic; the golden cases are yours. Preserve the independent
    `expected_requires_human_review` oracle and planted-red proof when changing the gate.
-6. **No PII pack needed.** Mkt4 has no customer-PII surface (aggregate metrics only), so there
+6. **No PII pack needed.** `performance-marketing-optimisation` has no customer-PII surface (aggregate metrics only), so there
    is no redaction step and no jurisdiction pattern pack to configure (audit C3 / C4 = N-A).
    If your fork introduces customer-level data, that changes, and you must add redaction and a
    PII-safety metric before going live.
@@ -115,11 +115,11 @@ to sweep Markdown prose too. The script deliberately does NOT touch the human de
 This repo is one system in a catalog of composable GRC systems. Several concerns it *touches*
 are owned by sibling platform services; integrate rather than rebuild them (see
 [`docs/faq/features-faq.md`](faq/features-faq.md) for the full map): the guardrail gateway
-(**Hrz1**), the agent registry (**Hrz3**), the AI-quality / eval gate (**Hrz4**),
-observability plus WORM audit (**Hrz5**), the human-review / maker-checker console (**Hrz7**,
-via `review-kit`), and the advertising / consumer-protection claim check (**Mkt6**). The
-`platform` profile's adapters are already thin HTTP clients to those services. Note **Hrz2**
-(governed RAG) is deliberately NOT a dependency: Mkt4 has no retrieval step (R3 is N-A).
+(`agent-guardrail-gateway`), the agent registry (`agent-registry`), the AI-quality / eval gate (`model-quality-gate`),
+observability plus WORM audit (`agent-observability`), the human-review / maker-checker console (`human-review-console`,
+via `review-kit`), and the advertising / consumer-protection claim check (`marketing-compliance-gate`). The
+`platform` profile's adapters are already thin HTTP clients to those services. Note `enterprise-knowledge-base`
+(governed RAG) is deliberately NOT a dependency: `performance-marketing-optimisation` has no retrieval step (R3 is N-A).
 
 ## 6. Adoption checklist
 

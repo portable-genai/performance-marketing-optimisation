@@ -1,6 +1,6 @@
-# Mkt4 console (thin Next.js UI)
+# `performance-marketing-optimisation` console (thin Next.js UI)
 
-A thin demo console for Mkt4 Performance Marketing and Attribution. It calls the Mkt4 FastAPI
+A thin demo console for `performance-marketing-optimisation` Performance Marketing and Attribution. It calls the `performance-marketing-optimisation` FastAPI
 backend (`POST /v1/report`) and renders the cited performance report: per-channel ROAS /
 CAC, the multi-touch attribution split, the deterministic budget plan, the A/B significance
 verdicts, the anomalies, and the maker-checker "human review required" banner.
@@ -11,7 +11,7 @@ npm run build           # must compile (tsconfig has baseUrl "." for the @/* ali
 NEXT_PUBLIC_API_BASE=http://localhost:8103 npm run dev
 ```
 
-The API base defaults to `http://localhost:8103` (the Mkt4 API port), so nothing needs
+The API base defaults to `http://localhost:8103` (the `performance-marketing-optimisation` API port), so nothing needs
 configuring to run against `make run-api`. Override it by setting `NEXT_PUBLIC_API_BASE`
 before `npm run build`: Next inlines every `NEXT_PUBLIC_*` value at build time.
 

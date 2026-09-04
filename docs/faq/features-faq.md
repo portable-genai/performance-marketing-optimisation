@@ -5,7 +5,7 @@ LLM, and, importantly, where its responsibilities **stop** and a sibling catalog
 over. Cross-references: [`README.md`](../../README.md), [`DEMO.md`](../../DEMO.md),
 [`ARCHITECTURE.md`](../../ARCHITECTURE.md).
 
-### What does Mkt4 actually produce?
+### What does `performance-marketing-optimisation` actually produce?
 
 A cited **performance report** for a marketing account in a given market and vertical. From
 the account's channel metrics and conversion journeys it produces: a multi-touch attribution
@@ -31,9 +31,9 @@ service" pattern.
 
 No. Every `PerformanceReport` sets `requires_human_review=True` (maker-checker, P-06); the
 agent proposes a spend shift and a qualified human disposes. The escalation is routed to the
-**Hrz7** Human-Review and Maker-Checker Console via the shared `review-kit` client (rule
+`human-review-console` via the shared `review-kit` client (rule
 R8), never left as a per-repo boolean; severity floors at medium and rises to dual-control on
-a HIGH-plus budget-shift or anomaly signal. Mkt4 never touches an ad platform's spend controls
+a HIGH-plus budget-shift or anomaly signal. `performance-marketing-optimisation` never touches an ad platform's spend controls
 directly.
 
 ### Which capabilities does this repo own vs integrate from the catalog?
@@ -43,23 +43,23 @@ measurement and attribution domain logic and its outputs. It **integrates** (via
 `platform` profile's thin HTTP adapters) several cross-cutting concerns owned by sibling
 systems; do not rebuild these in a fork:
 
-| Concern | Owned by (catalog id / repo) | Mkt4's role |
+| Concern | Owned by (catalog id / repo) | `performance-marketing-optimisation`'s role |
 |---|---|---|
-| Runtime guardrail: prompt-injection / jailbreak defense, unsafe-output screen | **Hrz1** `agent-guardrail-gateway` | consumes it on every report (input and output, pipeline and model boundary) |
-| Agent registry, versioning, identity, entitlements | **Hrz3** `agent-registry` | publishes its A2A AgentCard at `/.well-known/agent-card.json` for discovery |
-| AI-quality / eval / model-risk promotion gate | **Hrz4** `model-quality-gate` | its eval metrics gate promotion (bundle `mkt4-performance`); the offline gate mirrors it |
-| Observability + immutable WORM audit | **Hrz5** `agent-observability` | writes audit events to it; traces spans through it |
-| Human-review / maker-checker console | **Hrz7** (via `review-kit`) | routes every `requires_human_review` report to it (R8) |
-| Advertising / consumer-protection claim check on customer-facing copy | **Mkt6** `marketing-compliance-gate` | any output that becomes customer-facing must pass it (R7); Mkt4 drafts no customer-facing copy |
+| Runtime guardrail: prompt-injection / jailbreak defense, unsafe-output screen | `agent-guardrail-gateway` | consumes it on every report (input and output, pipeline and model boundary) |
+| Agent registry, versioning, identity, entitlements | `agent-registry` | publishes its A2A AgentCard at `/.well-known/agent-card.json` for discovery |
+| AI-quality / eval / model-risk promotion gate | `model-quality-gate` | its eval metrics gate promotion (bundle `mkt4-performance`); the offline gate mirrors it |
+| Observability + immutable WORM audit | `agent-observability` | writes audit events to it; traces spans through it |
+| Human-review / maker-checker console | `human-review-console` (via `review-kit`) | routes every `requires_human_review` report to it (R8) |
+| Advertising / consumer-protection claim check on customer-facing copy | `marketing-compliance-gate` | any output that becomes customer-facing must pass it (R7); `performance-marketing-optimisation` drafts no customer-facing copy |
 
 So the guardrail, audit sink, eval platform and review console are *dependencies*, not
-features of this repo. Note **Hrz2** (governed RAG / knowledge base) is **not** a dependency:
-Mkt4 has no retrieval step, it measures over BigQuery metrics and statistical models (R3 is
+features of this repo. Note `enterprise-knowledge-base` (governed RAG / knowledge base) is **not** a dependency:
+`performance-marketing-optimisation` has no retrieval step, it measures over BigQuery metrics and statistical models (R3 is
 n/a).
 
 ### Why is there no per-customer PII in the outputs?
 
-By design. Mkt4 measures over **aggregate** channel and campaign metrics (spend, impressions,
+By design. `performance-marketing-optimisation` measures over **aggregate** channel and campaign metrics (spend, impressions,
 clicks, conversion counts, revenue, ROAS / CAC, budgets, A/B arm totals). There is no
 customer-level record in the request or the warehouse, so there is nothing to redact and no
 national-identifier pattern to select by jurisdiction. The practices audit records C3 / C4 as

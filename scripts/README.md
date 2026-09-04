@@ -1,4 +1,4 @@
-# Demo scripts - Mkt4 Stats-based Performance Marketing & Attribution
+# Demo scripts - `performance-marketing-optimisation` Stats-based Performance Marketing & Attribution
 
 All scripts are SDK-free and run against the in-process `local` stack (no Google Cloud, no
 API key). They drive the real `PerformanceReportService` over four synthetic accounts

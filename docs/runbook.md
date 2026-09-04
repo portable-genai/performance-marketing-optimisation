@@ -1,6 +1,6 @@
-# Runbook: Mkt4 Stats-based Performance Marketing and Attribution
+# Runbook: `performance-marketing-optimisation` Stats-based Performance Marketing and Attribution
 
-Operational notes for deploying and running Mkt4 on the Gemini Enterprise Agent Platform in a
+Operational notes for deploying and running `performance-marketing-optimisation` on the Gemini Enterprise Agent Platform in a
 residency region (defaults `asia-southeast1`; JP and AU are per-market overrides). This is a
 reference build; adapt it to your own change-management and model-risk sign-off before any live
 use.

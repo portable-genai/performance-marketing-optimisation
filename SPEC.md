@@ -1,4 +1,4 @@
-# SPEC - Mkt4 Performance Marketing and Attribution
+# SPEC - `performance-marketing-optimisation` Performance Marketing and Attribution
 
 ## Purpose
 
@@ -39,21 +39,21 @@ unit-tested. Tunables are dataclass fields, not magic numbers.
 ## Ports
 
 `MetricsPort`, `AdPlatformPort` (data feeds), `LlmPort` (narration only), `GuardrailPort`
-(Hrz1), `AuditSinkPort` + `ObservabilityTracerPort` (Hrz5), `EvaluationGatePort` (Hrz4),
-`AgentRegistryPort` + `ToolCatalogPort` (Hrz3). Every port is `@runtime_checkable`.
+(`agent-guardrail-gateway`), `AuditSinkPort` + `ObservabilityTracerPort` (`agent-observability`), `EvaluationGatePort` (`model-quality-gate`),
+`AgentRegistryPort` + `ToolCatalogPort` (`agent-registry`). Every port is `@runtime_checkable`.
 
 ## GCP stack (headline)
 
 BigQuery (metrics warehouse) + Vertex AI forecasting (AdPlatformPort), Gemini (narration),
 Model Armor (guardrail), Cloud Logging WORM (audit), Cloud Trace (tracing), Gen AI evaluation
-(Hrz4 gate), A2A / MCP (governance). All Google imports are lazy.
+(`model-quality-gate`), A2A / MCP (governance). All Google imports are lazy.
 
 ## Profiles
 
 `local` (default, SDK-free working offline stack; CI / test), `gcp` (managed), `platform`
-(shared Hrz1-Hrz5 clients), `onprem` (fail-fast migration target, exit 2).
+(shared `agent-guardrail-gateway`-`agent-observability` clients), `onprem` (fail-fast migration target, exit 2).
 
-The `platform` Hrz4 promotion-gate client is a real HTTP client (not a stub): `POST
+The `platform` `model-quality-gate` promotion-gate client is a real HTTP client (not a stub): `POST
 /v1/evaluations` scores the golden set and `POST /v1/gate` returns the decision, with the
 metric set selected by the registered bundle name `mkt4-performance`.
 

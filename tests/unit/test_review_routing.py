@@ -1,10 +1,11 @@
-"""R8 routing: an escalated performance report is routed to Hrz7 via the shared review-kit.
+"""R8 routing: an escalated performance report is routed to human-review-console via the shared
+review-kit.
 
 Every performance report requires human review (P-06), so rule R8 says it MUST be handed to the
-Hrz7 maker-checker console rather than left as a boolean. These tests prove the producer half of
-that loop end-to-end against the offline local router (an in-memory outbox), that the verified
-tenant (C2) is carried on the wire, and the redact-before-wire boundary so no stray contact
-identifier reaches the console. Fictional data only.
+human-review-console maker-checker console rather than left as a boolean. These tests prove the
+producer half of that loop end-to-end against the offline local router (an in-memory outbox), that
+the verified tenant (C2) is carried on the wire, and the redact-before-wire boundary so no stray
+contact identifier reaches the console. Fictional data only.
 """
 
 from __future__ import annotations
@@ -58,7 +59,9 @@ def test_build_report_routes_escalated_report_to_outbox(local_container: Contain
     assert report.requires_human_review
 
     pending = router.outbox.pending()
-    assert len(pending) == 1, "the escalated report must be routed to Hrz7 exactly once"
+    assert len(pending) == 1, (
+        "the escalated report must be routed to human-review-console exactly once"
+    )
     review = pending[0].review
     assert review.action == "performance_report:build"
     assert review.case_ref == report.id
