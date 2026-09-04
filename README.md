@@ -1,4 +1,4 @@
-# Mkt4 - Performance Marketing and Attribution (`performance-marketing-optimisation`)
+# `performance-marketing-optimisation` - Performance Marketing and Attribution (`performance-marketing-optimisation`)
 
 **Industries:** Retail & e-commerce, Banking, Travel & hospitality, Gaming, D2C / subscription, Telecom
 
@@ -9,7 +9,7 @@ significance** and **anomaly detection** are all pure, replayable statistics tha
 (or an auditor) can re-run to the identical answer. The **LLM only narrates** the result and
 drafts the spend-shift recommendation; it never decides a number, a verdict or a budget move.
 
-Mkt4 is **generic and APAC**:
+`performance-marketing-optimisation` is **generic and APAC**:
 
 - **Two verticals as config + seed**: `banking` and `online_retail` are first-class
   configurable verticals. No bank-only logic is baked into the domain; banking is one
@@ -42,7 +42,7 @@ asserts the `local` and `onprem` adapter families satisfy every port Protocol.
         ┌────────────────┬──────────────┴───────────────┬────────────────┐
      gcp (lazy)        local (default)               platform           onprem
      BigQuery,         SDK-free, deterministic,      thin HTTP clients   fail-fast
-     Vertex AI,        seedable, offline; the        to Hrz1-Hrz5 shared     NotImplementedError
+     Vertex AI,        seedable, offline; the        to `agent-guardrail-gateway`-`agent-observability` shared     NotImplementedError
      Gemini, Model     WORKING stack used by CI      platform services   migration target
      Armor, Cloud      and tests                                         (exit 2)
      Logging/Trace
@@ -67,7 +67,7 @@ Switching the entire managed stack to on-prem is a one-line change of `profile`
   seedable. No `google-cloud-*` required.
 - **`gcp`**: the managed stack (BigQuery, Vertex AI forecasting, Gemini, Model Armor, Cloud
   Logging WORM, Cloud Trace, Gen AI evaluation). All Google imports are lazy.
-- **`platform`**: thin HTTP clients delegating to the shared Hrz1-Hrz5 services. The Hrz4
+- **`platform`**: thin HTTP clients delegating to the shared `agent-guardrail-gateway`-`agent-observability` services. The `model-quality-gate`
   promotion-gate client is a real HTTP client (`POST /v1/evaluations` + `POST /v1/gate`,
   metric set chosen by the registered bundle `mkt4-performance`), not a stub.
 - **`onprem`**: fail-fast `NotImplementedError` stubs satisfying the same Protocols

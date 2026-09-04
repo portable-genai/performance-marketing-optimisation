@@ -7,7 +7,7 @@ here. Read it first. This file carries only what is specific to this one.
 
 ## What this is
 
-Catalog id **Mkt4**. Performance marketing and attribution: multi-touch attribution, ROAS
+Catalog id `performance-marketing-optimisation`. Performance marketing and attribution: multi-touch attribution, ROAS
 and CAC, bid and budget optimisation, A/B significance and anomaly detection, each a pure
 replayable statistic the model narrates but never decides.
 
@@ -19,7 +19,7 @@ seed change.
 
 | | |
 |---|---|
-| Catalog id | `Mkt4` |
+| Catalog id | `performance-marketing-optimisation` |
 | Package | `src/performance_marketing/` |
 | Profile variable | `MKT_PERF_PROFILE` |
 | Adapter families | `gcp`, `local`, `onprem`, `platform` |

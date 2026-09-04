@@ -60,7 +60,7 @@ resource "google_monitoring_alert_policy" "security" {
   for_each = local.security_metrics
 
   project      = var.project_id
-  display_name = "Mkt4 security: ${each.key}"
+  display_name = "performance-marketing-optimisation security: ${each.key}"
   combiner     = "OR"
 
   conditions {
@@ -87,7 +87,7 @@ resource "google_monitoring_alert_policy" "security" {
   notification_channels = var.alert_notification_channels
 
   documentation {
-    content   = "Security signal '${each.key}' fired for the Mkt4 performance-marketing-optimisation agent. Investigate the matching entries in Cloud Logging and the WORM audit bucket."
+    content   = "Security signal '${each.key}' fired for the performance-marketing-optimisation performance-marketing-optimisation agent. Investigate the matching entries in Cloud Logging and the WORM audit bucket."
     mime_type = "text/markdown"
   }
 

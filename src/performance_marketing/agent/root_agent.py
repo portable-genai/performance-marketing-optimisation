@@ -55,7 +55,8 @@ _ROOT_INSTRUCTION = (
     "and recommend over it. Never invent a number or a citation.\n"
     "- A spend recommendation is a consequential output: always state that it requires human "
     "review (maker-checker) before any budget is moved.\n"
-    "- Marketing outputs are governed by Mkt6 and screened by the Hrz1 guardrail (rule R7)."
+    "- Marketing outputs are governed by marketing-compliance-gate and screened by the "
+    "agent-guardrail-gateway (rule R7)."
 )
 
 

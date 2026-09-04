@@ -1,6 +1,6 @@
-"""Contract tests for the platform eval adapter (RemoteEvaluationAdapter -> Hrz4).
+"""Contract tests for the platform eval adapter (RemoteEvaluationAdapter -> model-quality-gate).
 
-These pin the wire contract of the Hrz4 AI-quality / model-risk gate, without a live
+These pin the wire contract of the model-quality-gate AI-quality / model-risk gate, without a live
 service, using ``respx`` to intercept the ``httpx`` calls:
 
 * ``POST /v1/evaluations`` carries a **structured target**, a top-level ``dataset_id`` that

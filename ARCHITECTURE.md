@@ -1,6 +1,6 @@
-# Architecture - Mkt4 Performance Marketing and Attribution
+# Architecture - `performance-marketing-optimisation` Performance Marketing and Attribution
 
-Mkt4 is a **ports-and-adapters (hexagonal)** system. The domain is pure Python (standard
+`performance-marketing-optimisation` is a **ports-and-adapters (hexagonal)** system. The domain is pure Python (standard
 library only); every external capability is a `typing.Protocol` (a port) with interchangeable
 adapter families. Switching the entire managed stack to on-prem is a one-line change of
 `profile`; the domain never changes.
@@ -27,7 +27,7 @@ src/performance_marketing/
     gcp/             managed stack, lazy Google imports (BigQuery, Vertex, Gemini,
                      Model Armor, Cloud Logging/Trace, Gen AI eval, A2A, MCP)
     local/           SDK-free, deterministic, seedable - the WORKING offline stack
-    platform/        thin HTTP clients to the shared Hrz1-Hrz5 platform services
+    platform/        thin HTTP clients to the shared `agent-guardrail-gateway`-`agent-observability` platform services
     onprem/          fail-fast NotImplementedError migration target
   config.py          Settings + Container (DI by dotted path, per profile)
   api/               FastAPI (import-safe, port 8103)
@@ -58,9 +58,9 @@ decides a number, a verdict or a budget move.
   source; `to_jsonable` serialises the whole report for the API, audit and renderer.
 - **Maker-checker**: `PerformanceReport.requires_human_review` is always `True`; the budget
   plan is proposed, never executed.
-- **Guardrail**: input and output are screened (Hrz1); a blocked request never yields a partial
+- **Guardrail**: input and output are screened (`agent-guardrail-gateway`); a blocked request never yields a partial
   report.
-- **Audit**: every interaction is recorded WORM-style (Hrz5); blocked / escalated runs surface
+- **Audit**: every interaction is recorded WORM-style (`agent-observability`); blocked / escalated runs surface
   at a higher severity.
 - **Residency**: the GCP adapters resolve the region from the active market and validate it
   against the per-market allow-list, so data never leaves the configured boundary.
@@ -72,7 +72,7 @@ decides a number, a verdict or a budget move.
 `google-*`. The contract test constructs every `local` and `onprem` adapter with no GCP SDK
 installed and asserts each satisfies its port Protocol.
 
-## The Hrz4 eval gate
+## The `model-quality-gate`
 
 `eval/run_eval.py` runs the real `PerformanceReportService` over the local stack against a
 golden set of accounts and scores four metrics (report groundedness, citation accuracy,
@@ -80,9 +80,9 @@ attribution accuracy, review safety) against the thresholds in `eval/rubrics/*.y
 it on every change; a non-zero exit blocks promotion. The GCP `EvaluationGatePort`
 (Gen AI evaluation service) mirrors the same metric names and thresholds.
 
-In the `platform` profile the `EvaluationGatePort` is a real thin HTTP client to Hrz4's
+In the `platform` profile the `EvaluationGatePort` is a real thin HTTP client to `model-quality-gate`'s
 hardened contract, not a stub: `POST /v1/evaluations` scores the golden dataset (parsing
 `results[]` into the domain `EvalReport`) and `POST /v1/gate` returns the promotion decision.
 Both calls send a structured `target` plus a top-level `dataset_id` and select the metric set
-only by the registered bundle name `mkt4-performance`, so Hrz4 owns bundle membership and the
+only by the registered bundle name `mkt4-performance`, so `model-quality-gate` owns bundle membership and the
 client never sends a metric-name list.

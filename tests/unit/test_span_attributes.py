@@ -1,13 +1,13 @@
 """Span ATTRIBUTES carry structure, never content, and this is the test that can tell.
 
-The pipeline tests wire the real ``LocalNoopTracerAdapter``, whose ``span`` is a
-``nullcontext``: it observes nothing, so a span that started carrying the advertiser account
-key, the account's brand name or the drafted summary would keep every existing test green. A
-trace backend is not the WORM audit trail. It has no redaction stage, a wider read audience
-and no retention rule written against a regulator's requirement, so an attribute is OUTSIDE
-the boundary the guardrail and the redact-before-wire router hold: the sibling test
-``test_payload_is_redacted_and_carries_tenant_and_severity`` proves the Hrz7 payload masks
-contact identifiers, and none of that machinery runs on a span.
+The pipeline tests wire the real ``LocalNoopTracerAdapter``, whose ``span`` is a ``nullcontext``: it
+observes nothing, so a span that started carrying the advertiser account key, the account's brand
+name or the drafted summary would keep every existing test green. A trace backend is not the WORM
+audit trail. It has no redaction stage, a wider read audience and no retention rule written against
+a regulator's requirement, so an attribute is OUTSIDE the boundary the guardrail and the
+redact-before-wire router hold: the sibling test
+``test_payload_is_redacted_and_carries_tenant_and_severity`` proves the human-review-console payload
+masks contact identifiers, and none of that machinery runs on a span.
 
 The recording tracer here keeps ``dict(attributes)`` and drives the real request path,
 ``PerformanceReportService.build_report``, over the local seeded accounts. ``account_id`` is
@@ -34,7 +34,8 @@ ACCOUNT_ID = "acct-sg-banking"
 ACTOR = "analyst@bank.example"
 TENANT = "demo-bank"
 
-#: The complete attribute key set an Mkt6 span may carry, per span name. Widening one of
+#: The complete attribute key set an marketing-compliance-gate span may carry, per span name.
+#: Widening one of
 #: these is a decision about what leaves the trust boundary, so it is made here rather
 #: than at a call site.
 _ALLOWED = {

@@ -95,7 +95,8 @@ class PerformanceReportService:
         self._guardrail = guardrail
         self._tracer = tracer
         self._audit = audit
-        # Optional (rule R8): when bound, an escalated report is routed to the Hrz7 maker-checker
+        # Optional (rule R8): when bound, an escalated report is routed to the human-review-console
+        # maker-checker
         # console after it is audited. Left unset the report still audits ESCALATED, it just is
         # not forwarded to a console.
         self._review_router = review_router
@@ -174,7 +175,8 @@ class PerformanceReportService:
             )
             self._guard(summary, Direction.OUTPUT, actor)
             self._record(report, actor)
-            # Route the escalation to Hrz7 (rule R8). A performance report always requires human
+            # Route the escalation to human-review-console (rule R8). A performance report always
+            # requires human
             # review, so it is handed to the maker-checker console rather than terminating in a
             # boolean; the adapter redacts before the wire and carries the verified tenant (C2).
             # Best-effort: a console outage must not fail an already-assembled, already-audited

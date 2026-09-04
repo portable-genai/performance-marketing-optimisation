@@ -10,7 +10,7 @@
 
 resource "google_service_account" "runtime" {
   account_id   = "mkt-performance-runtime"
-  display_name = "Mkt4 Performance Marketing - Cloud Run runtime"
+  display_name = "performance-marketing-optimisation Performance Marketing - Cloud Run runtime"
   project      = var.project_id
 
   depends_on = [google_project_service.required]

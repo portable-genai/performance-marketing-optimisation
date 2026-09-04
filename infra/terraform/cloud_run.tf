@@ -1,4 +1,4 @@
-# cloud_run.tf - Cloud Run v2 service running the Mkt4 FastAPI app.
+# cloud_run.tf - Cloud Run v2 service running the performance-marketing-optimisation FastAPI app.
 #
 # Runs as the dedicated least-privilege runtime identity (iam.tf, Workload Identity, no keys),
 # encrypted with the regional CMEK key (kms.tf), in-region. Environment variables drive the

@@ -1,14 +1,14 @@
 """Shared conversion from an escalated performance report to an ``review-kit`` Review payload.
 
 Lives in the adapter layer (not the pure domain) because it depends on the kit. D4 is generic
-marketing over aggregate channel metrics, so the report carries no per-customer PII by design;
-even so the subject descriptor, summary and citation snippets are scrubbed for universal
-identifiers (email / phone) before they leave the process (R1 / P-04 boundary), a defensive belt
-so a stray identifier that slipped into a source title or snippet never reaches Hrz7 over the
-wire; Hrz7 redacts again before its own audit write (defense in depth). The maker (the agent that
-originated the report) and the tenant (the object-level-authorization owner verified at the build
-boundary, C2) are asserted here and trusted by Hrz7 because this is an authenticated S2S caller
-(per-hop OBO is the deferred next layer).
+marketing over aggregate channel metrics, so the report carries no per-customer PII by design; even
+so the subject descriptor, summary and citation snippets are scrubbed for universal identifiers
+(email / phone) before they leave the process (R1 / P-04 boundary), a defensive belt so a stray
+identifier that slipped into a source title or snippet never reaches human-review-console over the
+wire; human-review-console redacts again before its own audit write (defense in depth). The maker
+(the agent that originated the report) and the tenant (the object-level-authorization owner verified
+at the build boundary, C2) are asserted here and trusted by human-review-console because this is an
+authenticated S2S caller (per-hop OBO is the deferred next layer).
 """
 
 from __future__ import annotations
@@ -79,7 +79,9 @@ def _kit_citations(report: PerformanceReport) -> tuple[KitCitation, ...]:
 
 
 def report_to_review(report: PerformanceReport, *, maker: str, tenant: str = "") -> Review:
-    """Build the review a producer submits to Hrz7 when a performance report escalates."""
+    """Build the review a producer submits to human-review-console when a performance report
+    escalates.
+    """
     descriptor = (
         f"Performance report for account {report.account_id} "
         f"(market={report.market.value}, vertical={report.vertical.value})"

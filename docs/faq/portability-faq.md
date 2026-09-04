@@ -61,7 +61,7 @@ The `onprem` adapters are deliberate fail-fast placeholders (they raise
 `Settings` arg, so the *interface contract* for a sovereign migration is proven and enforced
 by CI today. The actual on-prem implementations are the migration work, scoped in
 [`docs/onprem-migration.md`](../onprem-migration.md). This repo is not the sovereign-exit
-*planner*: that is the sibling **Rsk5 exit-portability planner** (APRA CPS 230, MAS / HKMA
+*planner*: that is the sibling **the exit-and-portability planner exit-portability planner** (APRA CPS 230, MAS / HKMA
 outsourcing). This repo is one of the systems whose exit that planner reasons about.
 
 ### Does residency compromise portability?
@@ -72,7 +72,7 @@ stack runs by configuration. They are orthogonal. The APAC region is a validated
 Terraform variable (fail-fast allowlist matching `config/settings.yaml`: JP
 `asia-northeast1`, AU `australia-southeast1`, SG `asia-southeast1`), and a second market or
 region is a tfvars change, not a fork. Residency enforcement overlaps with the sibling
-**Rsk4 residency validator** (a CI gate for region violations), which a fork should run
+**the data-residency validator residency validator** (a CI gate for region violations), which a fork should run
 rather than re-implement.
 
 ### What is NOT yet portable / proven end to end?
@@ -81,7 +81,7 @@ rather than re-implement.
   (profile swap + parity + audit export / reload + identity swap) and gates it by exit code
   (F3 = PARTIAL); the pieces are proven by the contract tests instead.
 - The audit export / restore is a library capability, not a CLI command.
-- The `platform` delegates other than the Hrz4 eval client are phase stubs.
+- The `platform` delegates other than the `model-quality-gate` eval client are phase stubs.
 
 Everything in the one-shot report pipeline runs across `local` today, and the port parity
 that makes the `gcp` / `platform` / `onprem` swap safe is enforced on every merge.

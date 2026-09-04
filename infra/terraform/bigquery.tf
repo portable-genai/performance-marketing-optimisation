@@ -13,7 +13,7 @@
 resource "google_bigquery_dataset" "mkt_performance" {
   dataset_id  = "mkt_performance" # config/settings.yaml bigquery.dataset
   location    = var.region        # in-country residency
-  description = "Performance-marketing metrics warehouse for Mkt4 (channel metrics, conversion journeys, series)."
+  description = "Performance-marketing metrics warehouse for performance-marketing-optimisation (channel metrics, conversion journeys, series)."
 
   default_encryption_configuration {
     kms_key_name = google_kms_crypto_key.mkt_perf.id

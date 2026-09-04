@@ -1,6 +1,6 @@
-# Mkt4 demo - Performance Marketing and Attribution
+# `performance-marketing-optimisation` demo - Performance Marketing and Attribution
 
-Two ways to demo Mkt4: a fully **offline local** demo (no cloud, no API key) and a **GCP**
+Two ways to demo `performance-marketing-optimisation`: a fully **offline local** demo (no cloud, no API key) and a **GCP**
 demo on the managed stack. Both are region + vertical selectable, over obviously-fictional
 synthetic data for banking and online retail across JP / AU / SG.
 
@@ -82,7 +82,7 @@ export MKT_MARKET=SG MKT_VERTICAL=banking      # region + vertical selectable
 
 # Metrics from BigQuery, narration via Gemini, audit to the WORM bucket, eval via Gen AI eval.
 .venv/bin/mkt-perf report acct-sg-banking -m SG -v banking
-.venv/bin/python eval/run_eval.py --use-gcp     # route the Hrz4 gate through Gen AI eval
+.venv/bin/python eval/run_eval.py --use-gcp     # route the `model-quality-gate` through Gen AI eval
 make run-api                                    # the same API on the managed stack
 ```
 

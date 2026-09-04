@@ -1,6 +1,6 @@
-# infra/terraform - Mkt4 Performance Marketing deploy and residency hardening
+# infra/terraform - `performance-marketing-optimisation` Performance Marketing deploy and residency hardening
 
-This Terraform stack makes the deployed posture of Mkt4 enforceable at `terraform plan` time,
+This Terraform stack makes the deployed posture of `performance-marketing-optimisation` enforceable at `terraform plan` time,
 not merely documented. It deploys the FastAPI service (container port 8103) to Cloud Run in an
 in-country APAC region, with residency pinned, CMEK bound end to end, a dry-run-first VPC-SC
 perimeter, WORM audit logging and posture alerts.

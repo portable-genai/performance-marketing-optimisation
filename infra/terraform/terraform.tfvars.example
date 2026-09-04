@@ -1,7 +1,7 @@
 # terraform.tfvars.example - copy to terraform.tfvars and fill in for your project.
 # All values here are FICTIONAL placeholders.
 
-# Required: the single-tenant, single-market project hosting Mkt4.
+# Required: the single-tenant, single-market project hosting performance-marketing-optimisation.
 project_id = "mkt-perf-sg-fictional-0001"
 
 # Residency region. SG market default; JP -> asia-northeast1, AU -> australia-southeast1.

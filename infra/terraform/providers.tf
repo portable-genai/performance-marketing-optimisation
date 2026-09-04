@@ -1,4 +1,4 @@
-# providers.tf - Provider pinning for the Mkt4 Performance Marketing sovereign deploy.
+# providers.tf - Provider pinning for the performance-marketing-optimisation Performance Marketing sovereign deploy.
 #
 # Guarantee map (see SPEC.md "Guarantees"):
 #   Residency / in-country: every provider call is pinned to the Singapore region

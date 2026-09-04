@@ -9,7 +9,7 @@
 #         is irreversible, so retention must be deliberate). Mirrors
 #         config/settings.yaml logging.retention_days.
 #
-# NOTE on markets: Mkt4 is APAC-generic (JP / AU / SG). This stack deploys ONE market per
+# NOTE on markets: performance-marketing-optimisation is APAC-generic (JP / AU / SG). This stack deploys ONE market per
 # project; the SG default (asia-southeast1) is the reference. Deploying JP or AU is a separate
 # project with its own residency region (asia-northeast1 / australia-southeast1) and its own
 # allow-list value below.
@@ -29,7 +29,7 @@ variable "region" {
     # and config.market_profile(): SG -> asia-southeast1, JP -> asia-northeast1,
     # AU -> australia-southeast1. Any other region is rejected at plan time.
     condition     = contains(["asia-southeast1", "asia-northeast1", "australia-southeast1"], var.region)
-    error_message = "Mkt4 is an APAC-resident deployment: region must be one of asia-southeast1 (SG), asia-northeast1 (JP) or australia-southeast1 (AU)."
+    error_message = "performance-marketing-optimisation is an APAC-resident deployment: region must be one of asia-southeast1 (SG), asia-northeast1 (JP) or australia-southeast1 (AU)."
   }
 }
 

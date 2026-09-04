@@ -12,20 +12,20 @@ No. It is a **decision-support** agent: every consequential output requires huma
 assessment (attribution split, ROAS / CAC vs target, a budget-neutral reallocation plan, an
 A/B significance verdict, an anomaly scan); a qualified human disposes of any spend shift.
 Every `PerformanceReport` sets `requires_human_review=True`, and the escalation is routed to
-the **Hrz7** Human-Review and Maker-Checker Console via the shared `review-kit` client
+the `human-review-console` via the shared `review-kit` client
 (rule R8), never left as a per-repo boolean. Severity floors at medium and rises to
-dual-control on a HIGH-plus budget-shift or anomaly signal. Mkt4 never touches an ad
+dual-control on a HIGH-plus budget-shift or anomaly signal. `performance-marketing-optimisation` never touches an ad
 platform's spend controls directly.
 
 ### How is customer PII handled?
 
-There is none to handle, by design. Mkt4 measures over **aggregate** channel and campaign
+There is none to handle, by design. `performance-marketing-optimisation` measures over **aggregate** channel and campaign
 metrics (spend, impressions, clicks, conversion counts, revenue, ROAS / CAC, budgets, A/B arm
 totals). There is no customer-level record in the request or the warehouse, so there is
 nothing to redact and no national-identifier pattern to select by jurisdiction. The practices
 audit records C3 (redact-before-everything) and C4 (jurisdiction PII packs) as N-A, and
 `COMPLIANCE.md` carries a written rationale for the absent PII surface. The runtime
-guardrail / DLP itself is the sibling **Hrz1** gateway, which this repo consumes rather than
+guardrail / DLP itself is the sibling `agent-guardrail-gateway`, which this repo consumes rather than
 re-implements.
 
 ### How is the work auditable / reproducible?
@@ -35,7 +35,7 @@ Every report writes an immutable WORM `AuditEvent` with the decision and the cit
 orchestrator raises `MetricsEmptyError` rather than emit a degraded ungrounded report
 (grounded-or-fail). The consequential maths is deterministic, so an auditor can recompute any
 figure or verdict from the same inputs without the model. The enterprise WORM audit system is
-**Hrz5**; the in-repo hash-chained store is the offline / local stand-in (see
+`agent-observability`; the in-repo hash-chained store is the offline / local stand-in (see
 [security-faq.md](security-faq.md) for its exact tamper-evidence limits).
 
 ### What is the model-risk story?
@@ -46,7 +46,7 @@ tied to `requires_human_review`) gates the build (P-08); a PII-safety metric is 
 surface). Each golden row independently states the expected review requirement, and the gate
 runs a planted bypass through `assert_each_can_go_red` before trusting a green score. The
 enterprise promotion gate and
-red-team harness are the sibling **Hrz4** system (bundle `mkt4-performance`); this repo's gate
+red-team harness are the sibling `model-quality-gate` system (bundle `mkt4-performance`); this repo's gate
 mirrors its thresholds. A fork must rebuild the golden set for its own bundle, or the gate
 measures the wrong thing.
 
@@ -57,15 +57,15 @@ concrete code (an Evidence column naming real files), plus an **adopter-owned re
 crosswalk appendix** covering the shipped home markets: MAS (Singapore, FEAT / TRM /
 outsourcing), Australia (ACCC / ASIC / APRA), and Japan (fair-trade advertising), with SG
 ASAS for advertising standards. To add another regulator, copy the appendix table and swap
-the reference column; the Mkt4-control column is stable across regulators. At scale, the
-sibling **Rsk2 control-mapping toolkit** and **Rsk1 compliance assistant** generate and
+the reference column; the `performance-marketing-optimisation`-control column is stable across regulators. At scale, the
+sibling **the cloud control-mapping toolkit control-mapping toolkit** and **`compliance-advisory`** generate and
 maintain these crosswalks rather than hand-maintaining the table.
 
 ### Who checks that customer-facing marketing copy is compliant?
 
-Not this repo. Mkt4 drafts **no** customer-facing copy: the LLM only narrates internal,
+Not this repo. `performance-marketing-optimisation` drafts **no** customer-facing copy: the LLM only narrates internal,
 already-computed figures and drafts internal spend-shift wording for a human reviewer. Any
-output that becomes customer-facing must pass the sibling **Mkt6** `marketing-compliance-gate`
+output that becomes customer-facing must pass the sibling `marketing-compliance-gate`
 advertising / consumer-protection claim check (rule R7). That boundary is deliberate: the
 measurement domain and the claim-check domain are separate systems.
 
@@ -75,8 +75,8 @@ Yes, at deploy time (P-03 / P-09): a single in-country APAC region per deploymen
 `asia-northeast1`, AU `australia-southeast1`, SG `asia-southeast1`, default
 `asia-southeast1`), validated to fail fast, with regional endpoints, a `gcp.resourceLocations`
 Org Policy allowlist, CMEK, a VPC-SC perimeter, and WORM logging (retention validated at
-about seven years). The residency-violation CI gate is the sibling **Rsk4 residency
-validator**; the exit / concentration-risk plan is **Rsk5**. This repo enforces residency in
+about seven years). The residency-violation CI gate is the sibling **the data-residency validator residency
+validator**; the exit / concentration-risk plan is **the exit-and-portability planner**. This repo enforces residency in
 its own `infra/terraform/` and is one of the systems those tools reason about. CI and
 `make tf-validate` check format and validate the configuration without credentials; hosted
 enforcement still needs deployment evidence.
