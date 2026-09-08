@@ -302,6 +302,7 @@ class LocalSettings:
 
     audit_path: str = ""  # append-only audit store
     seed_path: str = ""  # metrics-warehouse seed JSON ("" => bundled fictional seed)
+    book_path: str = ""  # DuckDB metrics warehouse; "" => ~/.performance_marketing/book.duckdb
 
 
 @dataclass(frozen=True)

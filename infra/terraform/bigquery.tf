@@ -1,23 +1,41 @@
-# bigquery.tf - The performance-marketing-optimisation metrics warehouse (MetricsPort backend).
+# bigquery.tf : the marketing-performance warehouse (metrics, journeys, series).
 #
-# Guarantee map:
-#   Residency: the dataset location is var.region (the deployed market's region), so metrics
-#         stay in-country.
-#   CMEK (explicit, no cascade): the dataset is encrypted with the regional CMEK key (kms.tf).
-#         Internal data only; there is no public surface to this dataset.
+# Principle map:
+#   Residency  : the dataset is created in var.region; account performance data stays there.
+#   CMEK       : the dataset uses the regional CMEK from kms.tf (the BigQuery service-agent
+#                key binding lives in kms.tf, because CMEK does not cascade).
 #
-# Mirrors config/settings.yaml `bigquery:` (dataset + table names) so the
-# BigQueryMetricsAdapter queries match what is provisioned. Rows are curated, fictional
-# synthetic marketing metrics, never customer PII.
+# This schema is a CORRECTION, and the shape of the defect is worth recording because nothing
+# offline could see it. The adapter that reads this dataset
+# (adapters/gcp/bigquery_metrics.py) filters on `account_id` and `observed_date` and reads
+# `impressions`, `clicks` and a nested `touchpoints` array. This file used to declare `date`,
+# `touch_order` and no account column at all, so every query the managed profile makes would
+# have failed at the first request on a deployment: an unknown column in the WHERE clause is
+# not a subtle failure, and the local profile could not surface it because it ignored the
+# account and never ran SQL.
+#
+# tests/contract/test_demo_book.py now parses this file and fails when the adapter reads a
+# column it does not declare, or when the shipped book carries one it does not have.
+#
+# A journey is its ORDERED touchpoints, so they are a repeated record inside the journey row
+# rather than one row per touch keyed by a separate order column. The attribution engine
+# consumes a journey at a time; the previous shape would have made it reassemble what the
+# warehouse had taken apart, and the adapter never did.
+#
+# scripts/load_demo_book.py fills these tables from the shipped fictional book, and refuses a
+# dataset whose book_manifest does not declare itself fictional.
 
 resource "google_bigquery_dataset" "mkt_performance" {
-  dataset_id  = "mkt_performance" # config/settings.yaml bigquery.dataset
-  location    = var.region        # in-country residency
-  description = "Performance-marketing metrics warehouse for performance-marketing-optimisation (channel metrics, conversion journeys, series)."
+  dataset_id  = "mkt_performance" # matches settings.yaml bigquery.dataset
+  project     = var.project_id
+  location    = var.region
+  description = "Marketing performance warehouse: channel metrics, conversion journeys, metric series (CMEK)."
 
   default_encryption_configuration {
     kms_key_name = google_kms_crypto_key.mkt_perf.id
   }
+
+  delete_contents_on_destroy = false
 
   depends_on = [
     google_project_service.required,
@@ -25,62 +43,88 @@ resource "google_bigquery_dataset" "mkt_performance" {
   ]
 }
 
-# channel_metrics - per-channel spend / conversions / revenue (ROAS, CAC inputs).
+# Aggregated spend and outcome per account, channel and day. `impressions` and `clicks` are
+# what the ROAS, CAC and bid engines divide by; without them the adapter read zeros and every
+# derived rate would have been zero while the report still rendered.
 resource "google_bigquery_table" "channel_metrics" {
   dataset_id          = google_bigquery_dataset.mkt_performance.dataset_id
   table_id            = "channel_metrics" # config/settings.yaml bigquery.metrics_table
+  project             = var.project_id
   deletion_protection = true
 
-  encryption_configuration {
-    kms_key_name = google_kms_crypto_key.mkt_perf.id
-  }
-
   schema = jsonencode([
-    { name = "date", type = "DATE", mode = "REQUIRED" },
+    { name = "account_id", type = "STRING", mode = "REQUIRED" },
     { name = "market", type = "STRING", mode = "REQUIRED" },
     { name = "vertical", type = "STRING", mode = "REQUIRED" },
     { name = "channel", type = "STRING", mode = "REQUIRED" },
     { name = "spend", type = "FLOAT", mode = "REQUIRED" },
-    { name = "conversions", type = "INTEGER", mode = "REQUIRED" },
+    { name = "impressions", type = "INTEGER", mode = "REQUIRED" },
+    { name = "clicks", type = "INTEGER", mode = "REQUIRED" },
+    { name = "conversions", type = "FLOAT", mode = "REQUIRED" },
     { name = "revenue", type = "FLOAT", mode = "REQUIRED" },
+    { name = "observed_date", type = "DATE", mode = "REQUIRED" },
   ])
 }
 
-# conversion_journeys - multi-touch paths feeding the attribution engine.
+# One row per journey, its touchpoints nested and ordered by `position`.
 resource "google_bigquery_table" "conversion_journeys" {
   dataset_id          = google_bigquery_dataset.mkt_performance.dataset_id
   table_id            = "conversion_journeys" # config/settings.yaml bigquery.journeys_table
+  project             = var.project_id
   deletion_protection = true
-
-  encryption_configuration {
-    kms_key_name = google_kms_crypto_key.mkt_perf.id
-  }
 
   schema = jsonencode([
     { name = "journey_id", type = "STRING", mode = "REQUIRED" },
+    { name = "account_id", type = "STRING", mode = "REQUIRED" },
     { name = "market", type = "STRING", mode = "REQUIRED" },
     { name = "vertical", type = "STRING", mode = "REQUIRED" },
-    { name = "touch_order", type = "INTEGER", mode = "REQUIRED" },
-    { name = "channel", type = "STRING", mode = "REQUIRED" },
     { name = "converted", type = "BOOLEAN", mode = "REQUIRED" },
-    { name = "value", type = "FLOAT", mode = "NULLABLE" },
+    { name = "revenue", type = "FLOAT", mode = "REQUIRED" },
+    { name = "observed_date", type = "DATE", mode = "REQUIRED" },
+    {
+      name = "touchpoints", type = "RECORD", mode = "REPEATED",
+      fields = [
+        { name = "channel", type = "STRING", mode = "REQUIRED" },
+        { name = "observed_date", type = "STRING", mode = "NULLABLE" },
+        { name = "position", type = "INTEGER", mode = "REQUIRED" },
+      ]
+    },
   ])
 }
 
-# metric_series - time series feeding the anomaly-detection engine.
+# Dated scalar observations the anomaly detector runs over.
 resource "google_bigquery_table" "metric_series" {
   dataset_id          = google_bigquery_dataset.mkt_performance.dataset_id
   table_id            = "metric_series" # config/settings.yaml bigquery.series_table
+  project             = var.project_id
   deletion_protection = true
 
-  encryption_configuration {
-    kms_key_name = google_kms_crypto_key.mkt_perf.id
-  }
+  schema = jsonencode([
+    { name = "account_id", type = "STRING", mode = "REQUIRED" },
+    { name = "market", type = "STRING", mode = "REQUIRED" },
+    { name = "vertical", type = "STRING", mode = "REQUIRED" },
+    { name = "metric", type = "STRING", mode = "REQUIRED" },
+    { name = "observed_date", type = "DATE", mode = "REQUIRED" },
+    { name = "value", type = "FLOAT", mode = "REQUIRED" },
+  ])
+}
+
+# What this dataset holds and whether it may be replaced. `fictional` is the loader's
+# overwrite guard: a populated dataset without it is somebody's real warehouse and the loader
+# refuses. Not deletion-protected, because the loader rewrites this row on every load and the
+# guard is the control rather than the flag.
+resource "google_bigquery_table" "book_manifest" {
+  dataset_id          = google_bigquery_dataset.mkt_performance.dataset_id
+  table_id            = "book_manifest"
+  project             = var.project_id
+  deletion_protection = false
 
   schema = jsonencode([
-    { name = "date", type = "DATE", mode = "REQUIRED" },
-    { name = "market", type = "STRING", mode = "REQUIRED" },
-    { name = "metric", type = "STRING", mode = "REQUIRED" },
-    { name = "value", type = "FLOAT", mode = "REQUIRED" },
+    { name = "book_version", type = "STRING", mode = "REQUIRED" },
+    { name = "as_of_date", type = "DATE", mode = "REQUIRED" },
+    { name = "fictional", type = "BOOLEAN", mode = "REQUIRED" },
+    { name = "loaded_at", type = "TIMESTAMP", mode = "NULLABLE" },
+    { name = "source_commit", type = "STRING", mode = "NULLABLE" },
+    { name = "tenant", type = "STRING", mode = "REQUIRED" },
   ])
 }

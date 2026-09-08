@@ -8,6 +8,8 @@ PY ?= python3.14
 VENV ?= .venv
 BIN := $(VENV)/bin
 PROFILE ?= local
+PROJECT ?= $(GOOGLE_CLOUD_PROJECT)
+TENANT  ?= demo-bank   # a deployment's is its own; never this
 
 API_APP := performance_marketing.api.app:app
 API_HOST ?= 127.0.0.1  # no-auth local dev binds loopback; override deliberately
@@ -19,7 +21,7 @@ TF_REGION ?= asia-southeast1
 
 export MKT_PERF_PROFILE := $(PROFILE)
 
-.PHONY: venv install install-gcp lint format typecheck test eval gate \
+.PHONY: demo-book-dry-run load-demo-book venv install install-gcp lint format typecheck test eval gate \
         ui-install ui-check \
         demo demo-server demo-selftest smoke-local run-api run-ui tf-validate tf-plan clean
 
@@ -34,10 +36,10 @@ install-gcp: ## Install with the managed-stack extra (google-genai, bigquery, ..
 	$(BIN)/python -m pip install -e ".[gcp,dev]"
 
 lint:
-	$(BIN)/ruff check src tests
+	$(BIN)/ruff check src tests scripts/load_demo_book.py
 
 format:
-	$(BIN)/ruff format --check src tests
+	$(BIN)/ruff format --check src tests scripts/load_demo_book.py
 
 typecheck:
 	$(BIN)/mypy src
@@ -97,6 +99,12 @@ tf-plan: ## terraform plan for the pinned in-country region (checks the deploy p
 
 tf-validate:
 	cd $(TF_DIR) && terraform fmt -check -recursive && terraform init -backend=false -input=false && terraform validate
+
+demo-book-dry-run: ## Write the NDJSON the loader WOULD send to BigQuery, and stop.
+	$(BIN)/python scripts/load_demo_book.py --tenant $(TENANT) --dry-run build/demo-book
+
+load-demo-book: ## Load the fictional metrics warehouse into a deployment's dataset (needs TENANT).
+	$(BIN)/python scripts/load_demo_book.py --project $(PROJECT) --tenant $(TENANT)
 
 clean:
 	rm -rf $(VENV) .pytest_cache .ruff_cache .mypy_cache
