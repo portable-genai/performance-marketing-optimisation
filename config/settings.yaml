@@ -69,6 +69,8 @@ agent_engine:
 local:
   audit_path: ${MKT_LOCAL_AUDIT:-}      # append-only local audit (WORM stand-in)
   seed_path: ${MKT_LOCAL_SEED:-}        # metrics seed JSON ("" => bundled fictional seed)
+  book_path: ${MKT_LOCAL_BOOK:-}        # DuckDB metrics warehouse (channel metrics, journeys,
+                                        # series), seeded from the shipped demo book
 
 # Adopter-owned statistical decision policy. These are reference defaults.
 policy:

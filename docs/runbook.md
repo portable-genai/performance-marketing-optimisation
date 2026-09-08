@@ -70,6 +70,27 @@ docstring in `src/performance_marketing/agent/root_agent.py`. Record the resulti
 To attach an out-of-process governed MCP tool server, set `MKT_PERF_MCP_SERVER_URL`; unset, the
 agent uses its in-process FunctionTools.
 
+## Loading the metrics warehouse
+
+The `gcp` profile reads channel metrics, conversion journeys and metric series from the
+`mkt_performance` BigQuery dataset. Terraform creates those tables and leaves them empty;
+`scripts/load_demo_book.py` fills them with the shipped fictional book, which is the same
+book the laptop serves from DuckDB.
+
+```bash
+make demo-book-dry-run TENANT=<name>          # writes build/demo-book/*.ndjson, loads nothing
+make load-demo-book PROJECT=<id> TENANT=<name>
+```
+
+**Apply the Terraform first, and note that this schema changed.** It used to declare `date`,
+`touch_order` and no `account_id`, none of which the adapter can query: it filters on
+`account_id` and `observed_date` and reads `impressions`, `clicks` and a nested `touchpoints`
+array. Any dataset created from the old schema must be recreated, not patched, because two
+of the changes are on `deletion_protection` tables.
+
+**The loader truncates, so it refuses a book it did not write.** It proceeds only when the
+target tables are empty or `book_manifest` says what they hold is fictional.
+
 ## 3. Region selection and fail-fast
 
 The Terraform `region` is validated against the residency allowlist; an apply against a region

@@ -37,6 +37,47 @@ if TYPE_CHECKING:  # pragma: no cover - typing only, never imported at runtime
     from google.cloud import bigquery
 
 
+#: The columns this adapter reads, per the settings key naming the table it reads them from.
+#: Declared rather than only dereferenced inside row mapping, because the queries are
+#: ``SELECT *`` and a read set spelled only in ``row.get`` calls is invisible to any check.
+#: A contract test holds these against ``infra/terraform/bigquery.tf``. It was written after
+#: that file was found declaring `date` and `touch_order` while this adapter filtered on
+#: `account_id` and `observed_date` and read `impressions`, `clicks` and `touchpoints`: every
+#: managed query would have failed at the first request, and no offline check could see it.
+SELECTED_COLUMNS: dict[str, tuple[str, ...]] = {
+    "metrics_table": (
+        "account_id",
+        "market",
+        "vertical",
+        "channel",
+        "spend",
+        "impressions",
+        "clicks",
+        "conversions",
+        "revenue",
+        "observed_date",
+    ),
+    "journeys_table": (
+        "journey_id",
+        "account_id",
+        "market",
+        "vertical",
+        "converted",
+        "revenue",
+        "observed_date",
+        "touchpoints",
+    ),
+    "series_table": (
+        "account_id",
+        "market",
+        "vertical",
+        "metric",
+        "observed_date",
+        "value",
+    ),
+}
+
+
 class BigQueryMetricsAdapter:
     """Read cited performance metrics from the BigQuery warehouse."""
 
