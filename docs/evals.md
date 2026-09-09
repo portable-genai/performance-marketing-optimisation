@@ -50,9 +50,9 @@ it is rather than the rule being guessed from the number.
 |---|---|---|---|
 | `attribution_accuracy` | 0.8 | a rate; needs 5 positives | Fraction of golden accounts where the deterministic attribution credit shares sum to 1.0 within tolerance (credit is conserved across channels). |
 | `attribution_placement` | 1 | all or nothing | Credit lands on the channels the account's conversion journeys actually contain, and every channel in those journeys receives some. |
-| `citation_accuracy` | 0.9 | a rate; needs 10 positives | Fraction of cited source ids that appear in the computed / derived evidence set (no fabricated citations). |
+| `citation_accuracy` | 1 | a rate; needs 0 positives | Fraction of cited source ids that appear in the computed / derived evidence set (no fabricated citations). |
 | `report_groundedness` | 0.8 | a rate; needs 5 positives | Fraction of reports whose computed figures all carry at least one citation. A report built on uncited figures fails. |
-| `review_safety` | 0.99 | a rate; needs 100 positives | Fraction of reports that correctly set requires_human_review=True (maker-checker) before any budget shift is executed. |
+| `review_safety` | 1 | a rate; needs 0 positives | Fraction of reports that correctly set requires_human_review=True (maker-checker) before any budget shift is executed. |
 
 Scored over 6 golden accounts.
 
