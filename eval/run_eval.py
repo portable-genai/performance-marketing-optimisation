@@ -37,13 +37,20 @@ import json
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 # Domain models / config are pure-stdlib + the local adapters are SDK-free, so this script
 # runs in the local / on-prem / test profile with no Google Cloud SDK installed.
 # The --mode smoke|gate scaffold + aligned report rendering come from the shared
 # agent-eval-kit commons; this script keeps only its own offline
 # evaluator and gate runner.
-from agent_eval_kit import assert_each_can_go_red, eval_main
+from agent_eval_kit import (
+    assert_denominator_supports,
+    assert_each_can_go_red,
+    dataset_digest,
+    eval_main,
+    load_rubrics,
+)
 
 from performance_marketing.domain.models import (
     AttributionModel,
@@ -55,14 +62,23 @@ from performance_marketing.domain.models import (
     Vertical,
 )
 
-THRESHOLDS: dict[str, float] = {
-    "report_groundedness": 0.80,
-    "citation_accuracy": 0.90,
-    "attribution_accuracy": 0.80,
-    "review_safety": 0.99,
-}
+#: Where every bar lives. Not a dict here: a threshold written as a Python literal carries no
+#: argument. The rubric files carry the reasoning beside the number, and
+#: `agent_eval_kit.load_rubrics` reads them. What was here before was BOTH a dict and a loader
+#: that overlaid two rubric files on top of it, falling back to the dict when PyYAML was missing.
+
+#: The metrics this runner scores, in report order. Named so `assert_covers` can compare them
+#: with the rubric set in BOTH directions.
+SCORED: tuple[str, ...] = (
+    "report_groundedness",
+    "citation_accuracy",
+    "attribution_accuracy",
+    "attribution_placement",
+    "review_safety",
+)
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
+RUBRICS = _REPO_ROOT / "eval" / "rubrics"
 DEFAULT_DATASET = _REPO_ROOT / "eval" / "datasets" / "golden_accounts.jsonl"
 
 
@@ -103,25 +119,51 @@ def load_golden(path: Path) -> list[GoldenExample]:
 
 
 def load_thresholds_from_rubrics() -> dict[str, float]:
-    """Read thresholds from ``eval/rubrics/*.yaml`` when PyYAML is available."""
-    thresholds = dict(THRESHOLDS)
-    try:
-        import yaml  # type: ignore[import-untyped]
-    except ImportError:
-        return thresholds
-    rubric_dir = _REPO_ROOT / "eval" / "rubrics"
-    for name in ("groundedness.yaml", "attribution_accuracy.yaml"):
-        rubric_path = rubric_dir / name
-        if not rubric_path.exists():
-            continue
-        doc = yaml.safe_load(rubric_path.read_text(encoding="utf-8")) or {}
-        metric = doc.get("metric")
-        if isinstance(metric, str) and "threshold" in doc:
-            thresholds[metric] = float(doc["threshold"])
-        for companion, spec in (doc.get("companion_metrics") or {}).items():
-            if isinstance(spec, dict) and "threshold" in spec:
-                thresholds[str(companion)] = float(spec["threshold"])
-    return thresholds
+    """Read every metric's reviewed bar out of ``eval/rubrics/*.yaml``. No fallback, by design."""
+    return load_rubrics(RUBRICS).thresholds()
+
+
+def journey_touchpoints() -> dict[str, set[str]]:
+    """Per account, the channels that appear as a touchpoint in the SHIPPED conversion journeys.
+
+    The independent oracle `attribution_placement` needs, and it is the shipped book rather than
+    a list restated here: the touchpoints the gate measures against are the touchpoints the demo
+    narrates, so a book edit moves both together instead of moving only one.
+    """
+    from performance_marketing import demo_book
+
+    by_account: dict[str, set[str]] = {}
+    for row in demo_book.BOOK.rows("conversion_journeys"):
+        channels = by_account.setdefault(str(row["account_id"]), set())
+        for touchpoint in row["touchpoints"]:
+            channels.add(str(touchpoint["channel"]))
+    return by_account
+
+
+def score_attribution_placement(report: Any, account_id: str, touchpoints: dict) -> float:
+    """Did the credit land on the channels the journeys actually contain?
+
+    `attribution_accuracy` checks the credit shares sum to 1.0. They sum to 1.0 however the
+    credit is distributed, so an attribution that gave every point to a channel appearing in no
+    journey scores a perfect 1.000 there. That is arithmetic closure, and it is not attribution:
+    nobody buys an attribution model because its shares add up.
+
+    Two halves, equally weighted, failing in opposite directions: every channel receiving credit
+    appears as a touchpoint in this account's journeys, and every channel that appears as a
+    touchpoint receives some credit. The second is not pedantry, because a last-touch model does
+    exactly that to everything before the last touch, and a channel silently given nothing is a
+    channel the next budget decision will starve.
+    """
+    observed = touchpoints.get(account_id, set())
+    attribution = getattr(report, "attribution", None)
+    if attribution is None or not attribution.channels or not observed:
+        return 0.0
+    credited = {
+        channel.channel.value for channel in attribution.channels if channel.credit_share > 0
+    }
+    on_journey = len(credited & observed) / len(credited) if credited else 0.0
+    covered = len(credited & observed) / len(observed)
+    return round((on_journey + covered) / 2.0, 4)
 
 
 # --------------------------------------------------------------------------- #
@@ -232,9 +274,13 @@ class _PerMetric:
 
 def run_offline(dataset: Path, thresholds: dict[str, float]) -> EvalReport:
     assert_review_safety_can_go_red(thresholds["review_safety"])
+    # The rubrics and the scored set must agree in BOTH directions before anything is scored.
+    load_rubrics(RUBRICS).assert_covers(SCORED)
     examples = load_golden(dataset)
     service = _make_service()
-    agg: dict[str, _PerMetric] = {m: _PerMetric() for m in THRESHOLDS}
+    agg: dict[str, _PerMetric] = {metric: _PerMetric() for metric in SCORED}
+    touchpoints = journey_touchpoints()
+    produced: dict[str, int] = {"citations": 0}
     print(
         f"Running offline eval gate over {len(examples)} golden accounts "
         "(PerformanceReportService).\n"
@@ -250,26 +296,35 @@ def run_offline(dataset: Path, thresholds: dict[str, float]) -> EvalReport:
         agg["report_groundedness"].scores.append(score_groundedness(report))
         agg["citation_accuracy"].scores.append(score_citation_accuracy(report))
         agg["attribution_accuracy"].scores.append(score_attribution_accuracy(report))
+        agg["attribution_placement"].scores.append(
+            score_attribution_placement(report, ex.account_id, touchpoints)
+        )
         agg["review_safety"].scores.append(
             score_review_safety(report, ex.expected_requires_human_review)
         )
+        produced["citations"] += len(report.citations)
 
-    order = (
-        "report_groundedness",
-        "citation_accuracy",
-        "attribution_accuracy",
-        "review_safety",
-    )
     results = tuple(
         EvalMetricResult(
             metric=metric,
             score=round(agg[metric].mean, 4),
-            threshold=thresholds.get(metric, THRESHOLDS[metric]),
-            passed=round(agg[metric].mean, 4) >= thresholds.get(metric, THRESHOLDS[metric]),
+            threshold=thresholds[metric],
+            passed=round(agg[metric].mean, 4) >= thresholds[metric],
         )
-        for metric in order
+        for metric in SCORED
     )
-    return EvalReport(dataset=str(dataset), results=results, n_examples=len(examples))
+    # The corpus must be able to express every bar that claims a rate. citation_accuracy's
+    # denominator is the citations the reports carry, not the six accounts.
+    assert_denominator_supports(
+        thresholds["citation_accuracy"], produced["citations"], metric="citation_accuracy"
+    )
+    return EvalReport(
+        dataset=str(dataset),
+        results=results,
+        n_examples=len(examples),
+        dataset_digest=dataset_digest(dataset),
+        evaluator="offline heuristic (no cloud creds)",
+    )
 
 
 def run_gate(dataset: Path) -> tuple[EvalReport, bool]:

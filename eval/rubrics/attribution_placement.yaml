@@ -1,0 +1,41 @@
+# Scored by: eval/run_eval.py::score_attribution_placement against the SHIPPED demo book's
+# conversion journeys, per account. The oracle is the book rather than a list restated in the
+# eval, so the touchpoints the gate measures against are the touchpoints the demo narrates, and a
+# book edit moves both together instead of moving only one.
+#
+# Why this metric exists beside attribution_accuracy. That one checks the credit shares sum to
+# 1.0. They sum to 1.0 HOWEVER the credit is distributed, so an attribution that gave every point
+# to a channel appearing in no journey scores a perfect 1.000 there. That is arithmetic closure,
+# and it is not attribution. Nobody buys an attribution model because its shares add up.
+#
+# Two halves, equally weighted, failing in opposite directions:
+#
+#   on_journey  every channel receiving credit appears as a touchpoint in this account's
+#               journeys. Credit on a channel nobody touched is credit invented.
+#   covered     every channel that appears as a touchpoint receives some credit. A channel
+#               silently given nothing is a channel the next budget decision will starve, and a
+#               last-touch model does exactly that to everything before the last touch.
+metric: attribution_placement
+description: >
+  Credit lands on the channels the account's conversion journeys actually contain, and every
+  channel in those journeys receives some.
+threshold: 1.0
+direction: maximize
+applies_to:
+  - PerformanceReport.attribution.channels
+criteria:
+  - id: on_journey
+    description: Every credited channel is a touchpoint in this account's journeys.
+    weight: 0.5
+  - id: covered
+    description: Every touchpoint channel in those journeys receives some credit.
+    weight: 0.5
+scoring:
+  scale: [0.0, 1.0]
+  pass_if: "score >= threshold"
+denominator:
+  # 1.0 rather than a rate, and the two halves are why: at 0.5 an attribution could satisfy one
+  # and fail the other and still pass, and both are failures a performance marketer would reject
+  # outright rather than treat as a matter of degree.
+  kind: all-or-nothing
+  over: one attribution per golden account
