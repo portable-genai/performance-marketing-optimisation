@@ -11,7 +11,13 @@ description: >-
   on uncited figures fails.
 companion_metrics:
   citation_accuracy:
-    threshold: 0.90
+    threshold: 1.0
+    rationale: >-
+      Raised from 0.9 to 1.0 on the arithmetic rather than on appetite. Scored 0/1 once per case
+      over 6 cases, so a single failure gives 0.833, already below 0.9: the bar required 6 of 6
+      while reading as though it priced one failure in. 1.0 says the same thing out loud.
+      Tolerating one failure needs 10 cases, so the number to move first is the corpus, not the
+      bar.
     description: >-
       Fraction of cited source ids that appear in the computed / derived evidence set (no
       fabricated citations).
