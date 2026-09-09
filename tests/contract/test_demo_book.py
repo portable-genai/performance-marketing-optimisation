@@ -156,8 +156,16 @@ def test_the_managed_adapter_reads_only_columns_the_terraform_declares() -> None
 
 
 def test_the_book_and_the_terraform_declare_the_same_columns() -> None:
+    """The set checked is ``load_order()``, so it includes the manifest the loader writes.
+
+    ``TABLES`` is this repository's own tables and the loader writes one more: the manifest,
+    stamped last because it records the load that wrote the others. The loader creates
+    nothing, so a manifest missing from the Terraform is a load that exits before its first
+    row -- which is exactly what iterating ``TABLES`` cannot see, and what it did not see in
+    a sibling repository.
+    """
     declared = _terraform_tables()
-    for table in demo_book.TABLES:
+    for table in demo_book.BOOK.load_order():
         assert table.name in declared, f"the book ships {table.name} and Terraform does not"
         book_columns, tf_columns = sorted(table.columns), sorted(declared[table.name])
         assert book_columns == tf_columns, (
