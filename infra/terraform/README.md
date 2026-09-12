@@ -19,7 +19,7 @@ WORM audit, region validation against the per-market allow-list).
 | `apis.tf` | Enables ONLY the managed services the gcp profile binds (see below). |
 | `org_policy.tf` | `gcp.resourceLocations` allow-list + disable SA-key creation + uniform bucket access. |
 | `kms.tf` | One regional CMEK key + a per-service IAM binding (no project-wide grant). |
-| `bigquery.tf` | The metrics warehouse (MetricsPort), in-region, CMEK-encrypted. |
+| `bigquery.tf` | The metrics warehouse (MetricsPort), in-region, CMEK declared on every table as well as on the dataset (it cascades in BigQuery, not in Terraform). |
 | `vpc_sc.tf` | Service perimeter, dry-run first (`vpc_sc_dry_run = true`). |
 | `logging_worm.tf` | Locked (WORM) Cloud Logging bucket + sink + data-access audit config. |
 | `monitoring.tf` | Log-based alerts: guardrail blocks, SA-key creation, VPC-SC denials, CMEK changes. |
@@ -94,6 +94,9 @@ Never enforce blind on a path you have not first watched in dry-run.
   the bucket cannot be deleted for the full window. Confirm `retention_days` before apply.
 - `kms.tf` sets `prevent_destroy = true` on the CMEK key: a destroyed key strands all
   CMEK-encrypted data.
+- Deleting an `encryption_configuration` block from a table in `bigquery.tf` is not a no-op.
+  BigQuery has already stamped the dataset's key onto the live table, so the plan reads the
+  deletion as a key REMOVAL and REPLACES the table, which destroys every row it holds.
 
 ## Image
 
