@@ -45,10 +45,9 @@ resource "google_logging_project_sink" "audit_to_worm" {
 
   destination = "logging.googleapis.com/${google_logging_project_bucket_config.worm_audit.id}"
 
-  # config/settings.yaml logging.log_name + all Cloud Audit Logs (admin / data access).
+  # config/settings.yaml logging.log_name only. Cloud Audit Logs are NOT copied here: _Default already keeps them.
   filter = <<-EOT
     logName="projects/${var.project_id}/logs/performance-marketing-optimisation-audit"
-    OR logName:"cloudaudit.googleapis.com"
   EOT
 
   unique_writer_identity = true
