@@ -31,8 +31,11 @@ resource "google_bigquery_dataset" "mkt_performance" {
   location    = var.region
   description = "Marketing performance warehouse: channel metrics, conversion journeys, metric series (CMEK)."
 
-  default_encryption_configuration {
-    kms_key_name = google_kms_crypto_key.mkt_perf.id
+  dynamic "default_encryption_configuration" {
+    for_each = var.cmek_enabled ? [1] : []
+    content {
+      kms_key_name = one(google_kms_crypto_key.mkt_perf[*].id)
+    }
   }
 
   delete_contents_on_destroy = false
@@ -59,8 +62,11 @@ resource "google_bigquery_table" "channel_metrics" {
   # a REMOVAL, and removing an encryption configuration FORCES REPLACEMENT: the table is destroyed
   # and recreated, and a recreated table holds no rows. CMEK does not cascade in Terraform's model
   # even though it does in BigQuery's, which is why the key is named twice.
-  encryption_configuration {
-    kms_key_name = google_kms_crypto_key.mkt_perf.id
+  dynamic "encryption_configuration" {
+    for_each = var.cmek_enabled ? [1] : []
+    content {
+      kms_key_name = one(google_kms_crypto_key.mkt_perf[*].id)
+    }
   }
 
   schema = jsonencode([
@@ -91,8 +97,11 @@ resource "google_bigquery_table" "conversion_journeys" {
   # a REMOVAL, and removing an encryption configuration FORCES REPLACEMENT: the table is destroyed
   # and recreated, and a recreated table holds no rows. CMEK does not cascade in Terraform's model
   # even though it does in BigQuery's, which is why the key is named twice.
-  encryption_configuration {
-    kms_key_name = google_kms_crypto_key.mkt_perf.id
+  dynamic "encryption_configuration" {
+    for_each = var.cmek_enabled ? [1] : []
+    content {
+      kms_key_name = one(google_kms_crypto_key.mkt_perf[*].id)
+    }
   }
 
   schema = jsonencode([
@@ -128,8 +137,11 @@ resource "google_bigquery_table" "metric_series" {
   # a REMOVAL, and removing an encryption configuration FORCES REPLACEMENT: the table is destroyed
   # and recreated, and a recreated table holds no rows. CMEK does not cascade in Terraform's model
   # even though it does in BigQuery's, which is why the key is named twice.
-  encryption_configuration {
-    kms_key_name = google_kms_crypto_key.mkt_perf.id
+  dynamic "encryption_configuration" {
+    for_each = var.cmek_enabled ? [1] : []
+    content {
+      kms_key_name = one(google_kms_crypto_key.mkt_perf[*].id)
+    }
   }
 
   schema = jsonencode([
@@ -159,8 +171,11 @@ resource "google_bigquery_table" "book_manifest" {
   # a REMOVAL, and removing an encryption configuration FORCES REPLACEMENT: the table is destroyed
   # and recreated, and a recreated table holds no rows. CMEK does not cascade in Terraform's model
   # even though it does in BigQuery's, which is why the key is named twice.
-  encryption_configuration {
-    kms_key_name = google_kms_crypto_key.mkt_perf.id
+  dynamic "encryption_configuration" {
+    for_each = var.cmek_enabled ? [1] : []
+    content {
+      kms_key_name = one(google_kms_crypto_key.mkt_perf[*].id)
+    }
   }
 
   schema = jsonencode([
