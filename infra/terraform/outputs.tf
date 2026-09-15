@@ -16,7 +16,7 @@ output "region" {
 # --------------------------------- KMS -------------------------------------- #
 output "kms_key" {
   description = "Regional CMEK crypto key id (binds BigQuery, Logging, Vertex AI, Cloud Run)."
-  value       = google_kms_crypto_key.mkt_perf.id
+  value       = one(google_kms_crypto_key.mkt_perf[*].id)
 }
 
 # ------------------------------- Metrics warehouse -------------------------- #
