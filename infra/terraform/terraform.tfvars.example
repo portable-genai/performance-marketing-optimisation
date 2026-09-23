@@ -10,6 +10,11 @@ region = "asia-southeast1"
 # WORM audit retention (~7 years). The bucket lock is irreversible; keep >= 2557.
 retention_days = 2557
 
+# The WORM lock has NO default: a plan refuses until it is stated here. true is the compliant
+# production form and is IRREVERSIBLE for the retention window; an evaluation stack that must
+# stay destroyable states false (NOT compliant).
+worm_locked = true
+
 # Org-level inputs (needed for org-wide policy / VPC-SC). Leave blank for project-scoped use.
 org_id           = "000000000000"
 access_policy_id = ""

@@ -21,7 +21,7 @@ WORM audit, region validation against the per-market allow-list).
 | `kms.tf` | One regional CMEK key + a per-service IAM binding (no project-wide grant). |
 | `bigquery.tf` | The metrics warehouse (MetricsPort), in-region, CMEK declared on every table as well as on the dataset (it cascades in BigQuery, not in Terraform). |
 | `vpc_sc.tf` | Service perimeter, dry-run first (`vpc_sc_dry_run = true`). |
-| `logging_worm.tf` | Locked (WORM) Cloud Logging bucket + sink + data-access audit config. |
+| `logging_worm.tf` | WORM Cloud Logging bucket (locked when `worm_locked = true`) + sink + data-access audit config. |
 | `monitoring.tf` | Log-based alerts: guardrail blocks, SA-key creation, VPC-SC denials, CMEK changes. |
 | `iam.tf` | Least-privilege Cloud Run runtime service account. |
 | `cloud_run.tf` | The FastAPI service: runtime SA, `MKT_PERF_PROFILE=gcp`, CMEK, internal ingress, port 8103, `/healthz` probes. |
@@ -90,7 +90,7 @@ Never enforce blind on a path you have not first watched in dry-run.
 
 ## Irreversible actions
 
-- `logging_worm.tf` sets `locked = true` on the audit bucket: retention cannot be reduced and
+- `worm_locked = true` locks the audit bucket (`logging_worm.tf`, no default): retention cannot be reduced and
   the bucket cannot be deleted for the full window. Confirm `retention_days` before apply.
 - `kms.tf` sets `prevent_destroy = true` on the CMEK key: a destroyed key strands all
   CMEK-encrypted data.
