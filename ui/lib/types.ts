@@ -124,7 +124,12 @@ export interface PerformanceReport {
   anomalies: AnomalyReport | null;
   citations: Citation[];
   requires_human_review: boolean;
+  /** What happened to the hand-off to the human-review console (the API reports it). */
+  review_routing?: ReviewRouting;
 }
+
+/** The four outcomes of a human-review hand-off, as the API reports them. */
+export type ReviewRouting = "routed" | "failed" | "off" | "not_required";
 
 export interface Health {
   status: string;

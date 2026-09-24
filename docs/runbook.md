@@ -53,9 +53,11 @@ export MKT_PERF_KMS_KEY="$(terraform output -raw kms_key)"
 export MKT_PERF_BQ_DATASET="$(terraform output -raw bigquery_dataset)"
 export MKT_PERF_LOG_BUCKET="$(terraform output -raw log_bucket)"
 
-# 3. Install the managed stack and run the API.
+# 3. Install the managed stack and run the API. With review routing on (the default) the
+#    process refuses to boot without the console it routes to.
 pip install -e ".[gcp,dev]"
 export GOOGLE_CLOUD_PROJECT=your-sg-project MKT_PERF_PROFILE=gcp
+export HUMAN_REVIEW_URL=https://human-review.your-bank.example   # or MKT_PERF_REVIEW_ROUTING=off
 gcloud auth application-default login
 make run-api PROFILE=gcp          # FastAPI on :8103 (front with the platform ingress)
 ```
@@ -120,11 +122,37 @@ To stop serving without tearing down state: scale the Cloud Run / Agent Runtime 
 zero, or remove the app service account's `roles/aiplatform.user` binding. The audit trail
 remains intact.
 
+## 5a. Runtime controls
+
+`MKT_PERF_GUARDRAIL` and `MKT_PERF_REVIEW_ROUTING` each switch one cheap runtime
+control, read once at startup in three states: unset is on, `true`/`false` (or `on`/`off`,
+`1`/`0`, `yes`/`no`) wins, and an emptied or unrecognised value refuses to boot, naming the
+variable. The Terraform states both (`guardrail_enabled`, `review_routing_enabled`, default
+`true`). This service has no PII redaction port, so it has no redaction switch.
+
+- **Guardrail off** binds a guardrail that allows everything unchanged. Under `gcp` with the
+  guardrail on, an empty `model_armor.template_id` refuses to boot rather than building a
+  malformed Model Armor URL at the first request.
+- **Review routing off** binds a router that submits nothing. Every report is still audited
+  `ESCALATED` and still says `requires_human_review`, and every response reports
+  `review_routing: "off"` so nobody reads it as queued for a reviewer. Under `gcp` or
+  `platform` with routing on, an unset `HUMAN_REVIEW_URL` refuses to boot; set the switch off
+  to run without a console, rather than leaving the URL out.
+- A process with either control off logs one `WARNING` at startup naming each.
+
+Every caller that hands a report to the review console reports what happened to it:
+the API response and the agent tool's payload carry `review_routing`, the MCP
+`performance_report` tool returns it with the report, and both CLI commands print it (`routed`, `failed`, `off`, `not_required`). A hand-off that fails is logged at
+`WARNING` with the exception type and reported as `failed`; the report itself is still
+returned, and the console says it is not queued for review.
+
 ## 6. Common failures
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | `NotImplementedError` from a CLI command (exit 2) | `MKT_PERF_PROFILE=onprem` with placeholder adapters | Set `MKT_PERF_PROFILE=gcp` (or implement the on-prem adapter) |
+| Boot refused: "Review routing is on ... but HUMAN_REVIEW_URL is not set" | `gcp`/`platform` with routing on and no console named | Set `HUMAN_REVIEW_URL` (Terraform `human_review_url`), or state `MKT_PERF_REVIEW_ROUTING=off` |
+| A response says `review_routing: "failed"` | The review console was unreachable or refused the hand-off; the log names the exception type | Restore the console; the report is not queued, so resubmit it once the console answers |
 | `UnknownAccountError` on a report (HTTP 404) | No such account in the ad-platform source | Confirm the `account_id` and its market / vertical |
 | `MetricsEmptyError` on a report (HTTP 404) | No metrics in the lookback window | Widen `lookback_days` or confirm the metrics source is populated |
 | Guardrail block on a benign request (HTTP 400) | Model Armor template too strict | Tune the `model_armor` template filter confidence levels |

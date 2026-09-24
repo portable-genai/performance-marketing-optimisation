@@ -30,3 +30,9 @@ container_image = "asia-southeast1-docker.pkg.dev/mkt-perf-sg-fictional-0001/mkt
 # Monitoring notification channels (create separately; ids look like below).
 alert_notification_channels = []
 # alert_notification_channels = ["projects/mkt-perf-sg-fictional-0001/notificationChannels/0000000000000000000"]
+
+# Cheap runtime controls stay on in the reference; say so rather than inheriting the default.
+# With review routing on the service refuses to boot without the console it routes to.
+guardrail_enabled      = true
+review_routing_enabled = true
+human_review_url       = "https://human-review.acme-bank.example"

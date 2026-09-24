@@ -27,8 +27,10 @@ from typing import Any
 
 from hex_service_kit import mcpserve
 
+from ..adapters.controls import RecordingReviewRouter
 from ..config import build_container
-from ..domain.models import AttributionModel, Market, ReportRequest, Vertical
+from ..domain.models import AttributionModel, Market, PerformanceReport, ReportRequest, Vertical
+from ..domain.serialization import to_jsonable
 
 #: The tools this module answers, as data, so a test can hold it against the catalog.
 HANDLER_NAMES: tuple[str, ...] = ("performance_report", "budget_optimisation", "ab_significance")
@@ -50,15 +52,34 @@ def _request(arguments: dict[str, Any]) -> ReportRequest:
 
 
 def build_handlers(actor: str) -> dict[str, mcpserve.Handler]:
-    """Bind each declared tool to the report service that already performs it."""
+    """Bind each declared tool to the report service that already performs it.
+
+    Every tool builds a report, and every report is handed to the review router, so each goes
+    through :class:`RecordingReviewRouter`: a failed hand-off is logged by exception type rather
+    than swallowed. ``performance_report`` returns the whole report and so also says what
+    happened to the hand-off (``review_routing``); the other two return a section, which has no
+    place for it.
+    """
+
+    def _routed_report(
+        arguments: dict[str, Any],
+    ) -> tuple[PerformanceReport, RecordingReviewRouter]:
+        from ..api.deps import get_container, make_report_service
+
+        routing = RecordingReviewRouter(get_container().review_router)
+        report = make_report_service(review_router=routing).build_report(
+            _request(arguments), actor=actor, tenant=""
+        )
+        return report, routing
 
     def _report(arguments: dict[str, Any]) -> Any:
-        from ..api.app import make_report_service
-
-        return make_report_service().build_report(_request(arguments), actor=actor, tenant="")
+        return _routed_report(arguments)[0]
 
     def performance_report(**arguments: Any) -> Any:
-        return _report(arguments)
+        report, routing = _routed_report(arguments)
+        payload: dict[str, Any] = to_jsonable(report)
+        payload["review_routing"] = routing.outcome.value
+        return payload
 
     def budget_optimisation(**arguments: Any) -> Any:
         return _report(arguments).budget_plan

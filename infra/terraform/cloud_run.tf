@@ -60,6 +60,28 @@ resource "google_cloud_run_v2_service" "api" {
         value = "/app/config/settings.yaml"
       }
 
+      # Cheap runtime controls, stated rather than inherited: on in the reference. Off is a
+      # deployment choice the service logs at startup.
+      env {
+        name  = "MKT_PERF_GUARDRAIL"
+        value = tostring(var.guardrail_enabled)
+      }
+      env {
+        name  = "MKT_PERF_REVIEW_ROUTING"
+        value = tostring(var.review_routing_enabled)
+      }
+      # Rule R8: the console every report is routed to. Set only when it carries a value,
+      # because the service reads its environment in three states and an EMPTY variable is
+      # refused. With routing on it is required (variables.tf), since the service refuses to
+      # boot without it.
+      dynamic "env" {
+        for_each = var.human_review_url == "" ? [] : [var.human_review_url]
+        content {
+          name  = "HUMAN_REVIEW_URL"
+          value = env.value
+        }
+      }
+
       startup_probe {
         http_get {
           path = "/healthz"

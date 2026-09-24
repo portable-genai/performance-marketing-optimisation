@@ -1,5 +1,13 @@
-import type { PerformanceReport } from "@/lib/types";
+import type { PerformanceReport, ReviewRouting } from "@/lib/types";
 import { CitationList } from "./CitationList";
+
+// What happened to the human-review hand-off, in the words the user needs. A report that must be
+// reviewed but is not queued must say so rather than read as on its way to a reviewer.
+const REVIEW_ROUTING_TEXT: Record<Exclude<ReviewRouting, "not_required">, string> = {
+  routed: "Sent to the review console.",
+  failed: "Could not reach the review console; this report is not queued for review.",
+  off: "Review routing is off in this deployment; this report is not queued for review.",
+};
 
 const MARKET_LABEL: Record<string, string> = {
   JP: "Japan",
@@ -70,6 +78,16 @@ export function ReportView({ report }: { report: PerformanceReport }) {
         <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
           HUMAN REVIEW REQUIRED — maker-checker gate. Do not move any budget until a qualified
           performance lead signs off.
+          {report.review_routing && report.review_routing !== "not_required" ? (
+            <p
+              data-review-routing={report.review_routing}
+              className={`mt-1 font-medium ${
+                report.review_routing === "routed" ? "text-emerald-800" : "text-rose-800"
+              }`}
+            >
+              {REVIEW_ROUTING_TEXT[report.review_routing]}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
