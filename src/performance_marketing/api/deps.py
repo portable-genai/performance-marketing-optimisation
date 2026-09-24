@@ -7,6 +7,7 @@ into the domain orchestrator, so the CLI, API and agent layers share identical w
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Any
 
 from ..config import Container, build_container
 from ..domain.anomaly_service import AnomalyService
@@ -21,7 +22,16 @@ def get_container() -> Container:
     return build_container()
 
 
-def make_report_service(container: Container | None = None) -> PerformanceReportService:
+def make_report_service(
+    container: Container | None = None, *, review_router: Any = None
+) -> PerformanceReportService:
+    """Build the report service; ``review_router`` replaces the container's for one call.
+
+    A caller that reports the hand-off passes a
+    :class:`~performance_marketing.adapters.controls.RecordingReviewRouter` wrapping the
+    container's router, so what it returns can say whether the report reached the review
+    console.
+    """
     container = container or get_container()
     policy = container.settings.policy
     return PerformanceReportService(
@@ -49,5 +59,5 @@ def make_report_service(container: Container | None = None) -> PerformanceReport
             critical_threshold=policy.anomaly_critical_threshold,
             min_window=policy.anomaly_min_window,
         ),
-        review_router=container.review_router,
+        review_router=review_router or container.review_router,
     )

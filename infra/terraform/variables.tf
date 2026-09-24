@@ -152,3 +152,40 @@ variable "cmek_enabled" {
     the right answer: the stores it bound stay bound.
   EOT
 }
+
+# --------------------------------------------------------------------------- #
+# Cheap runtime controls (the fleet's runtime-control contract). Each is on in the reference,
+# reversible, and therefore takes a default; off is a stated deployment choice the service logs
+# at startup.
+# --------------------------------------------------------------------------- #
+variable "guardrail_enabled" {
+  description = "Switch the input and output guardrail (Model Armor under gcp) on the service (MKT_PERF_GUARDRAIL). A cheap runtime control: on in the reference, reversible, so it takes a default."
+  type        = bool
+  default     = true
+}
+
+variable "review_routing_enabled" {
+  description = "Switch the hand-off of every report to the human-review-console (MKT_PERF_REVIEW_ROUTING). A cheap runtime control: on in the reference, reversible, so it takes a default."
+  type        = bool
+  default     = true
+}
+
+variable "human_review_url" {
+  description = <<-EOT
+    The human-review-console base URL the review router submits every report to
+    (HUMAN_REVIEW_URL, rule R8). No default: with review routing on, the service refuses to
+    boot without one, so a deployment names it or states review_routing_enabled = false (and
+    then may pass ""). HTTPS, because the payload carries the report.
+  EOT
+  type        = string
+
+  validation {
+    condition     = !var.review_routing_enabled || can(regex("^https://", var.human_review_url))
+    error_message = "review_routing_enabled requires human_review_url, an https:// URL: the service refuses to boot with routing on and no console named. Name one, or set review_routing_enabled = false."
+  }
+
+  validation {
+    condition     = var.human_review_url == "" || can(regex("^https://", var.human_review_url))
+    error_message = "human_review_url must be an https:// URL."
+  }
+}

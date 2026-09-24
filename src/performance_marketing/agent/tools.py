@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from ..adapters.controls import RecordingReviewRouter
 from ..config import Container, Settings, build_container
 
 if TYPE_CHECKING:  # pragma: no cover - typing only, never imported at runtime
@@ -62,7 +63,9 @@ def build_performance_report(
       actor: Authenticated identity the request is made for.
 
     Returns:
-      A JSON-safe ``PerformanceReport`` dict.
+      A JSON-safe ``PerformanceReport`` dict, with ``review_routing`` saying whether the report
+      reached the human-review console (``routed``), could not (``failed``), or routing is
+      ``off``.
     """
     from ..api.deps import make_report_service
     from ..domain.models import AttributionModel, Market, ReportRequest, Vertical
@@ -76,7 +79,15 @@ def build_performance_report(
         attribution_model=AttributionModel(attribution_model),
         lookback_days=lookback_days,
     )
-    return to_jsonable(make_report_service(c).build_report(request, actor=actor, tenant=tenant))
+    routing = RecordingReviewRouter(c.review_router)
+    payload: dict[str, Any] = to_jsonable(
+        make_report_service(c, review_router=routing).build_report(
+            request, actor=actor, tenant=tenant
+        )
+    )
+    # The report is always a maker-checker item; the agent is told whether it is actually queued.
+    payload["review_routing"] = routing.outcome.value
+    return payload
 
 
 TOOL_FUNCTIONS = (build_performance_report,)

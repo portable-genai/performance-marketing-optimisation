@@ -21,6 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from hex_service_kit import cors_allowlist
 from hex_service_kit.web import add_loopback_exposure_guard
 
+from ..adapters.controls import RecordingReviewRouter
 from ..config import Settings, end_user_auth_kind
 from ..domain.errors import (
     AuthorizationError,
@@ -306,8 +307,11 @@ def build_report(body: ReportRequestModel, principal: CurrentPrincipal) -> dict:
         request = _build_request(body)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    # The hand-off never fails an already-built, already-audited report; the response says what
+    # happened to it instead (the fleet's runtime-control contract).
+    routing = RecordingReviewRouter(deps.get_container().review_router)
     try:
-        report = make_report_service().build_report(
+        report = make_report_service(review_router=routing).build_report(
             request, actor=principal.actor, tenant=principal.tenant
         )
     except AuthorizationError as exc:
@@ -322,4 +326,7 @@ def build_report(body: ReportRequestModel, principal: CurrentPrincipal) -> dict:
         raise HTTPException(status_code=404, detail=f"no metrics: {exc}") from exc
     except NotImplementedError as exc:
         raise HTTPException(status_code=501, detail=str(exc)) from exc
-    return to_jsonable(report)
+    payload: dict = to_jsonable(report)
+    # What happened to the human-review hand-off: routed, failed, off or not_required.
+    payload["review_routing"] = routing.outcome.value
+    return payload

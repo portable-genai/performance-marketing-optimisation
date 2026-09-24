@@ -177,8 +177,11 @@ def report(
     lookback: int = typer.Option(30, "--lookback", help="Lookback window in days."),
 ) -> None:
     """Build a cited performance report for an account in a market and vertical."""
-    from ..api.deps import make_report_service
+    from ..adapters.controls import RecordingReviewRouter
+    from ..api.deps import get_container, make_report_service
     from ..domain.models import AttributionModel, Market, ReportRequest, Vertical
+
+    routing: RecordingReviewRouter | None = None
 
     def go() -> PerformanceReport:
         request = ReportRequest(
@@ -188,10 +191,15 @@ def report(
             attribution_model=AttributionModel(model),
             lookback_days=lookback,
         )
-        return make_report_service().build_report(request, actor=_CLI_ACTOR, tenant=_CLI_TENANT)
+        nonlocal routing
+        routing = RecordingReviewRouter(get_container().review_router)
+        return make_report_service(review_router=routing).build_report(
+            request, actor=_CLI_ACTOR, tenant=_CLI_TENANT
+        )
 
     result = _run("report", go)
     _echo_report(result)
+    _echo_hand_off(routing)
 
 
 @app.command("budget-plan")
@@ -203,14 +211,21 @@ def budget_plan(
     ),
 ) -> None:
     """Show only the deterministic budget-reallocation plan for an account."""
-    from ..api.deps import make_report_service
+    from ..adapters.controls import RecordingReviewRouter
+    from ..api.deps import get_container, make_report_service
     from ..domain.models import Market, ReportRequest, Vertical
+
+    routing: RecordingReviewRouter | None = None
 
     def go() -> Any:
         request = ReportRequest(
             account_id=account_id, market=Market(market), vertical=Vertical(vertical)
         )
-        return make_report_service().build_report(request, actor=_CLI_ACTOR, tenant=_CLI_TENANT)
+        nonlocal routing
+        routing = RecordingReviewRouter(get_container().review_router)
+        return make_report_service(review_router=routing).build_report(
+            request, actor=_CLI_ACTOR, tenant=_CLI_TENANT
+        )
 
     result = _run("budget-plan", go)
     typer.secho(
@@ -226,6 +241,13 @@ def budget_plan(
                 f"{s.delta:+.2f} — {s.rationale}"
             )
         _echo_citations(tuple(c for s in plan.shifts for c in s.citations))
+    _echo_hand_off(routing)
+
+
+def _echo_hand_off(routing: Any) -> None:
+    """Rule R8 on the CLI path too: say where the escalation went, not only that it exists."""
+    if routing is not None:
+        typer.echo(f"human review hand-off: {routing.outcome.value}")
 
 
 if __name__ == "__main__":  # pragma: no cover
