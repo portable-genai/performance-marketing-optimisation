@@ -65,6 +65,11 @@ Switching the entire managed stack to on-prem is a one-line change of `profile`
 
 - **`local`** (default, dev/test/CI): a WORKING offline stack - SDK-free, deterministic,
   seedable. No `google-cloud-*` required.
+- **`live`** (laptop): `local` with one change, the `llm` port answers from the shared local
+  open-weight model through the `hex_service_kit.localmodel` client (`LOCAL_MODEL_URL`,
+  `LOCAL_MODEL`; default Gemma 4 31B on `http://127.0.0.1:8001`). Start the server with
+  `python -m mlx_vlm.server --model mlx-community/gemma-4-31b-it-8bit --port 8001`, then
+  `make run-api PROFILE=live`. Tests, CI and `make demo` stay on `local`.
 - **`gcp`**: the managed stack (BigQuery, Vertex AI forecasting, Gemini, Model Armor, Cloud
   Logging WORM, Cloud Trace, Gen AI evaluation). All Google imports are lazy.
 - **`platform`**: thin HTTP clients delegating to the shared `agent-guardrail-gateway`-`agent-observability` services. The `model-quality-gate`

@@ -46,9 +46,10 @@ export default function Page() {
       const status = await api.healthz();
       if (cancelled) return;
       setHealth(status);
-      // The demo identity picker is dev-only: it appears solely under the local profile,
-      // where the backend has no IdP and resolves identity from the X-Dev-Persona header.
-      if (status?.profile !== "local") return;
+      // The demo identity picker is dev-only: it appears solely under the laptop profiles
+      // (local, and live, which is local with a local model answering), where the backend has
+      // no IdP and resolves identity from the X-Dev-Persona header.
+      if (status?.profile !== "local" && status?.profile !== "live") return;
       try {
         const list = await api.listPersonas();
         if (cancelled || list.length === 0) return;
@@ -114,7 +115,7 @@ export default function Page() {
               ))}
             </select>
             <p className="mt-1 text-[11px] text-ink-400">
-              Local profile only · sent as X-Dev-Persona · ignored in secure mode
+              Laptop profiles only · sent as X-Dev-Persona · ignored in secure mode
             </p>
           </div>
         ) : null}
