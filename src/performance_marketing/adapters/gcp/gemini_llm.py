@@ -8,9 +8,10 @@ floating ADK default model is never used).
 In D4 the LLM only narrates and drafts over the already-computed deterministic result (the
 attribution split, the ROAS / CAC, the budget plan, the significance and the anomalies). It
 never decides the numbers. The adapter maps the domain :class:`LlmRequest` onto
-``client.models.generate_content`` (system instruction, temperature, max-output-tokens, a
-:class:`ThinkingConfig` mapped from ``request.thinking``, and structured-output config when a
-response schema is supplied), and maps ``usage_metadata`` back onto :class:`TokenUsage`.
+``client.models.generate_content`` (system instruction, temperature only when the call site
+pins one, max-output-tokens, a :class:`ThinkingConfig` mapped from ``request.thinking``, and
+structured-output config when a response schema is supplied), maps ``usage_metadata`` back onto
+:class:`TokenUsage`, and notes the model that answered for the console's model pill.
 
 The residency region is resolved from the active market and **validated** against the
 per-market allow-list, so narration stays inside the configured residency boundary.
@@ -22,6 +23,8 @@ this module without ``google-genai`` installed.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
+
+from hex_service_kit import provenance
 
 from ...config import Settings
 from ...domain.models import LlmRequest, LlmResponse, ThinkingLevel, TokenUsage
@@ -66,6 +69,10 @@ class GeminiLLMAdapter:
         contents = self._to_contents(request, types)
         config = self._build_config(request, types)
         response = client.models.generate_content(model=model, contents=contents, config=config)
+        # The model that ANSWERED, for the console's pill (X-Answered-By). Noted after the call
+        # returns, so a refused or failed call names nothing. No search tool is ever attached
+        # here, so nothing notes a search.
+        provenance.note_model(model)
         return LlmResponse(
             text=getattr(response, "text", "") or "",
             usage=self._map_usage(getattr(response, "usage_metadata", None)),
@@ -94,6 +101,7 @@ class GeminiLLMAdapter:
                 ),
             ),
         )
+        provenance.note_model(self._models.triage)
         raw = (getattr(response, "text", "") or "").strip()
         return self._match_label(raw, labels)
 
@@ -112,12 +120,15 @@ class GeminiLLMAdapter:
 
     def _build_config(self, request: LlmRequest, types: Any) -> Any:
         kwargs: dict[str, Any] = {
-            "temperature": request.temperature,
             "max_output_tokens": request.max_output_tokens,
             "thinking_config": types.ThinkingConfig(
                 thinking_level=self._thinking_level(request.thinking, types)
             ),
         }
+        # Omitted, not defaulted, when the call site leaves sampling free: some models reject
+        # the parameter outright, so "free" has to mean absent rather than 1.0.
+        if request.temperature is not None:
+            kwargs["temperature"] = request.temperature
         if request.system_instruction:
             kwargs["system_instruction"] = request.system_instruction
         if request.response_schema is not None:

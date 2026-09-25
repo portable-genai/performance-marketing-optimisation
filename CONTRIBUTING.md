@@ -41,7 +41,18 @@ The user authors all commits. Do not add `Co-Authored-By` trailers.
    `tests/contract/test_port_parity.py`; a placeholder must construct and fail fast.
 4. Add profile-specific boundary tests, including unavailable service and malformed response
    cases. Do not copy business rules into the adapter.
-5. Run `make gate`, the UI gate when applicable, and `make tf-validate` when deployment
+5. A MODEL port adapter notes what answered and samples per call. After a successful call the
+   `gcp` adapter calls `hex_service_kit.provenance.note_model(<the model id it actually
+   called>)`, and `provenance.note_search()` only when an online search tool was attached to
+   THAT call; the `local` stub notes `config.STUB_GENERATOR_MODEL`; a `live` adapter on the
+   kit's local-model client needs nothing. `api/app.py` turns the notes into `X-Answered-By` /
+   `X-Search-Used` for the console's pills. `LlmRequest.temperature` is `float | None = None`
+   and an adapter OMITS it when `None` (some models reject the parameter, so free means absent,
+   never `1.0`); pin `0.0` only where the output is extracted, classified, scored or compared,
+   and leave narration, drafting and judges free. No flag may swap in a second model:
+   `generator_model` is the model the adapter calls (`tests/unit/test_answer_provenance.py`,
+   `tests/unit/test_sampling_per_call.py`).
+6. Run `make gate`, the UI gate when applicable, and `make tf-validate` when deployment
    configuration changed.
 
 ## Adding a new port or sub-service

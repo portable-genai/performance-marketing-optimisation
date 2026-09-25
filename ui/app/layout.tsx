@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ProvenanceBanner } from "./ProvenanceBanner";
+import { ModelPills } from "./ModelPills";
 import "./globals.css";
 
 // Required by the nonce CSP, not a performance preference. `proxy.ts` mints a per-request
@@ -22,19 +22,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   // EMBED mode: the host page owns the chrome. When embedded (NEXT_PUBLIC_EMBED=1) we drop
-  // the app-level banner so only the report console renders inside the host's iframe; the
+  // the app-level header so only the report console renders inside the host's iframe; the
   // standalone build keeps its own header.
+  //
+  // The model pills render in BOTH modes, and embedded is the mode that needs them most: a
+  // panel inside somebody else's portal is where a viewer has least context about which model
+  // answered. They are mounted in the LAYOUT rather than in a page because "at the top of every
+  // page" is a property of the console, and fixed at the top right so nothing a page renders
+  // can push them off screen.
   const embed = process.env.NEXT_PUBLIC_EMBED === "1";
   return (
     <html lang="en">
       <body className="min-h-screen">
-        <ProvenanceBanner />
+        <ModelPills />
         {embed ? (
           children
         ) : (
           <>
             <header className="border-b border-ink-200 bg-white">
-              <div className="mx-auto max-w-6xl px-6 py-3">
+              {/* Below `md` the title and its note reach the right edge, so the header's text
+                  starts under the model pills (fixed at the top right) instead of beneath them. */}
+              <div className="mx-auto max-w-6xl px-6 pb-3 pt-8 md:pt-3">
                 <span className="text-sm font-semibold text-ink-800">
                   Performance Marketing and Attribution
                 </span>

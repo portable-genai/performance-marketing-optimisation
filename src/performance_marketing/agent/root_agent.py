@@ -89,8 +89,9 @@ def build_root_agent(settings: Settings | None = None) -> LlmAgent:
     if mcp_toolset is not None:
         tools.append(mcp_toolset)
 
+    # No temperature: the agent converses and narrates over tool results, so sampling is left
+    # free (owner decision, 2026-09-23). Free means the parameter is absent, never 1.0.
     generate_content_config = types.GenerateContentConfig(
-        temperature=0.2,
         thinking_config=types.ThinkingConfig(thinking_budget=-1),
     )
 
