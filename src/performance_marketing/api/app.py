@@ -19,7 +19,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from hex_service_kit import cors_allowlist
-from hex_service_kit.web import add_loopback_exposure_guard
+from hex_service_kit.web import add_loopback_exposure_guard, install_answer_provenance
 
 from ..adapters.controls import RecordingReviewRouter
 from ..config import Settings, end_user_auth_kind
@@ -202,6 +202,18 @@ async def _security_headers(request: Request, call_next: Any) -> Any:
     if legacy is not None:
         response.headers["X-Frame-Options"] = legacy
     return response
+
+
+# Which model answered: the model adapters note it as they call
+# (`hex_service_kit.provenance.note_model`; the kit's local-model client notes itself) and this
+# emits it as `X-Answered-By` on the same response, with `X-Search-Used` when a call noted an
+# online search (none does here: this service has no search tool). Both are listed in
+# `Access-Control-Expose-Headers` by the same middleware, because the console calls this service
+# cross-origin standalone and a browser hides every header not listed there. The console's pills
+# read the two headers, so what a pill names is what answered, never what configuration says
+# would. A request that noted nothing sends neither, and the pill keeps showing the configured
+# `generator_model` from `/healthz`.
+install_answer_provenance(app)
 
 
 # A request arrives with nothing authenticating the END USER unless BOTH of these hold, and

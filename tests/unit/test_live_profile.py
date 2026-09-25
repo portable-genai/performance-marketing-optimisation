@@ -100,6 +100,7 @@ def test_a_request_without_a_schema_is_a_plain_completion() -> None:
     assert response.text == "plain prose"
     assert response.raw is None
     assert transport.bodies[0]["messages"] == [{"role": "user", "content": "hello"}]
+    assert "temperature" not in transport.bodies[0], "a free call sends no temperature at all"
 
 
 def test_a_server_that_does_not_answer_is_model_unavailable() -> None:

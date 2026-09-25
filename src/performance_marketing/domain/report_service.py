@@ -248,6 +248,9 @@ class PerformanceReportService:
             LlmRequest(
                 messages=(LlmMessage(role="user", content=prompt),),
                 response_schema=_SUMMARY_SCHEMA,
+                # Free, not pinned: this narrates a summary over numbers the deterministic
+                # engines already fixed, and nothing compares the prose.
+                temperature=None,
             )
         )
         return self._extract_summary(response.text, request)
