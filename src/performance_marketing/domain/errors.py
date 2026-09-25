@@ -50,3 +50,15 @@ class UnsupportedMarketError(PerformanceMarketingError):
 
 class UnsupportedVerticalError(PerformanceMarketingError):
     """Raised when a requested vertical has no configured seed / targets."""
+
+
+class ModelUnavailableError(PerformanceMarketingError):
+    """Raised when the model behind the LLM port did not answer (the API answers 503).
+
+    The message says how to bring the model back, so a presenter is never told only that a
+    URL did not answer.
+    """
+
+
+class ModelOutputError(PerformanceMarketingError):
+    """Raised when the model answered but no attempt was usable (the API answers 502)."""

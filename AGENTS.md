@@ -22,7 +22,7 @@ seed change.
 | Catalog id | `performance-marketing-optimisation` |
 | Package | `src/performance_marketing/` |
 | Profile variable | `MKT_PERF_PROFILE` |
-| Adapter families | `gcp`, `local`, `onprem`, `platform` |
+| Adapter families | `gcp`, `local`, `live` (local plus the shared local model on `llm`), `onprem`, `platform` |
 | Gate | `make gate` |
 | Console gate | `make ui-check` |
 
