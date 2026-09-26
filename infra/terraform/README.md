@@ -20,6 +20,7 @@ WORM audit, region validation against the per-market allow-list).
 | `org_policy.tf` | `gcp.resourceLocations` allow-list + disable SA-key creation + uniform bucket access. |
 | `kms.tf` | One regional CMEK key + a per-service IAM binding (no project-wide grant). |
 | `bigquery.tf` | The metrics warehouse (MetricsPort), in-region, CMEK declared on every table as well as on the dataset (it cascades in BigQuery, not in Terraform). |
+| `model_armor.tf` | The `mkt-perf-guardrail` Model Armor template the `guardrail` adapter screens through (regional capabilities follow `model_armor_full_capabilities`). |
 | `vpc_sc.tf` | Service perimeter, dry-run first (`vpc_sc_dry_run = true`). |
 | `logging_worm.tf` | WORM Cloud Logging bucket (locked when `worm_locked = true`) + sink + data-access audit config. |
 | `monitoring.tf` | Log-based alerts: guardrail blocks, SA-key creation, VPC-SC denials, CMEK changes. |
@@ -63,6 +64,14 @@ VPC-SC egress rule or Private Service Connect), NOT by enabling another GCP API 
 
 The same allow-list is enforced in the app at settings load, so an off-region value fails fast
 in both code and infra. One project deploys one market.
+
+## Guardrail template
+
+`model_armor.tf` creates the `mkt-perf-guardrail` Model Armor template the `guardrail` adapter
+screens through (`config/settings.yaml` `model_armor.template_id`). The malicious-URI filter and
+multi-language detection are regional capabilities: `asia-southeast1` serves neither and Model
+Armor refuses the whole template with `CAPABILITY_NOT_SUPPORTED` rather than degrading, so a
+deployment there sets `model_armor_full_capabilities = false` (default `true` elsewhere).
 
 ## Usage
 

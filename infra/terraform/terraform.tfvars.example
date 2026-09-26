@@ -36,3 +36,8 @@ alert_notification_channels = []
 guardrail_enabled      = true
 review_routing_enabled = true
 human_review_url       = "https://human-review.acme-bank.example"
+
+# The Model Armor guardrail template (model_armor.tf). asia-southeast1 serves neither the
+# malicious-URI filter nor multi-language detection and refuses the whole template with
+# CAPABILITY_NOT_SUPPORTED, so the SG deployment declines both explicitly:
+# model_armor_full_capabilities = false
