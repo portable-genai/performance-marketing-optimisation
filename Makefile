@@ -103,8 +103,8 @@ run-ui: ## Run the thin Next.js console (dev server); set NEXT_PUBLIC_API_BASE t
 tf-plan: ## terraform plan for the pinned in-country region (checks the deploy posture).
 	cd $(TF_DIR) && terraform init -input=false && terraform plan -var="region=$(TF_REGION)"
 
-tf-validate:
-	cd $(TF_DIR) && terraform fmt -check -recursive && terraform init -backend=false -input=false && terraform validate
+tf-validate: ## Offline Terraform proof: fmt, validate and the mock-provider plan tests (no credentials).
+	cd $(TF_DIR) && terraform fmt -check -recursive && terraform init -backend=false -input=false && terraform validate && terraform test
 
 demo-book-dry-run: ## Write the NDJSON the loader WOULD send to BigQuery, and stop.
 	$(BIN)/python scripts/load_demo_book.py --tenant $(TENANT) --dry-run build/demo-book
