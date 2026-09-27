@@ -295,6 +295,9 @@ class ForecastSettings:
 class ModelArmorSettings:
     template_id: str = "mkt-perf-guardrail"
     host: str = "modelarmor.asia-southeast1.rep.googleapis.com"
+    #: The deadline on every sanitize call. A timeout raises to the caller, which audits the
+    #: refusal; it never becomes an allow.
+    timeout_seconds: float = 30.0
 
 
 #: The environment variables that switch each cheap runtime control, read in three states:

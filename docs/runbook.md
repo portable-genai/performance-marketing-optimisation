@@ -156,4 +156,5 @@ returned, and the console says it is not queued for review.
 | `UnknownAccountError` on a report (HTTP 404) | No such account in the ad-platform source | Confirm the `account_id` and its market / vertical |
 | `MetricsEmptyError` on a report (HTTP 404) | No metrics in the lookback window | Widen `lookback_days` or confirm the metrics source is populated |
 | Guardrail block on a benign request (HTTP 400) | Model Armor template too strict | Tune the `model_armor` template filter confidence levels |
+| Guardrail block reading "no complete filter decision" or "no usable verdict" | Model Armor did not run every filter (`invocationResult` `PARTIAL` / `FAILURE`: input past a filter's token limit, an unsupported language, a detector error) or returned no match state. The adapter fails closed on both by design | Shorten or split the input, or fix the template; do not loosen the adapter. Only `NO_MATCH_FOUND` with `SUCCESS` allows |
 | VPC-SC denies the apply | Runner identity outside the perimeter | Apply with `vpc_sc_enforce = false`, add the identity to `operator_members`, re-apply true |
