@@ -13,7 +13,7 @@
 #                                 agent_registry (A2ARegistryAdapter)
 #   modelarmor.googleapis.com -> guardrail (ModelArmorGuardrailAdapter)
 #   logging.googleapis.com    -> audit (CloudLoggingAuditAdapter -> WORM bucket)
-#   cloudtrace.googleapis.com -> tracer (CloudTraceTracerAdapter)
+#   cloudtrace.googleapis.com -> tracer (CloudTracerAdapter)
 #   run.googleapis.com        -> the Cloud Run service that serves the FastAPI app
 #
 # NOTE on the ad platform: in the gcp profile the AdPlatformPort is backed by Vertex AI

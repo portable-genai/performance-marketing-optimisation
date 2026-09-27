@@ -151,8 +151,8 @@ adapters:
     live: performance_marketing.adapters.local.audit:LocalAppendOnlyAuditAdapter
     onprem: performance_marketing.adapters.onprem.audit:OnPremAuditAdapter
   tracer:
-    gcp: performance_marketing.adapters.gcp.cloud_trace_tracer:CloudTraceTracerAdapter
-    platform: performance_marketing.adapters.gcp.cloud_trace_tracer:CloudTraceTracerAdapter
+    gcp: performance_marketing.adapters.gcp.tracer:CloudTracerAdapter
+    platform: performance_marketing.adapters.gcp.tracer:CloudTracerAdapter
     local: performance_marketing.adapters.local.tracer:LocalNoopTracerAdapter
     live: performance_marketing.adapters.local.tracer:LocalNoopTracerAdapter
     onprem: performance_marketing.adapters.onprem.tracer:OnPremTracerAdapter
